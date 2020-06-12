@@ -7,6 +7,8 @@ Adults aged 18 to 23 inclusive are assumed to attend post-secondary education.
 """
 module schools
 
+export populate_school_contacts!
+
 using DataFrames
 using Distributions
 

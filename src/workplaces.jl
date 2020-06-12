@@ -1,6 +1,6 @@
 module workplaces
 
-export populate_workplace_contacts
+export populate_workplace_contacts!
 
 using DataFrames
 using Distributions

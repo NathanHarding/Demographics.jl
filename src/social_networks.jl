@@ -1,5 +1,7 @@
 module social_networks
 
+export populate_social_contacts!
+
 using Random
 
 const socialcontacts = Int[]   # Contains person IDs. Social contacts can be derived for each person.

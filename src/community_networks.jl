@@ -1,5 +1,7 @@
 module community_networks
 
+export populate_community_contacts!
+
 using Random
 
 const communitycontacts = Int[]   # Contains person IDs. Community contacts can be derived for each person.

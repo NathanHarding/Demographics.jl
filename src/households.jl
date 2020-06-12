@@ -1,5 +1,7 @@
 module households
 
+export populate_households!
+
 using DataFrames
 using Dates
 using Distributions
