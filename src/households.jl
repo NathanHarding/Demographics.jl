@@ -8,6 +8,7 @@ using Distributions
 using Logging
 
 using ..utils
+using ..persons
 
 struct Household
     max_nadults::Int
@@ -44,9 +45,9 @@ function push_child!(hh::Household, id)
     true  # Success
 end
 
-function populate_households!(people, age2first, household_distribution::DataFrame)
+function populate_households!(people, age2first, household_distribution::DataFrame, dt::Date)
     @info "$(now()) Populating households with children"
-    populate_households_with_children!(people, age2first, household_distribution)
+    populate_households_with_children!(people, age2first, household_distribution, dt)
     @info "$(now()) Populating households without children"
     populate_households_without_children!(people, household_distribution)
 end
@@ -67,7 +68,7 @@ while n_unplaced_children > 0
        - adults at least 20 years older than oldest child
     set household contacts
 """
-function populate_households_with_children!(agents, age2first, household_distribution)
+function populate_households_with_children!(agents, age2first, household_distribution, dt)
     family_household_distribution = construct_child_household_distribution(household_distribution)
     unplaced_children = Set(1:(age2first[18] - 1))
     unplaced_parents  = Set((age2first[20]):(age2first[55] - 1))  # Parents of children under 18 are adults aged between 20 and 54
@@ -90,9 +91,9 @@ function populate_households_with_children!(agents, age2first, household_distrib
             push_child!(hh, childid)
             child = agents[childid]
             child.i_household = idx
-            age = child.age
-            age_youngest_child = age < age_youngest_child ? age : age_youngest_child
-            age_oldest_child   = age > age_oldest_child   ? age : age_oldest_child
+            age_years = age(child, dt, :year)
+            age_youngest_child = age_years < age_youngest_child ? age_years : age_youngest_child
+            age_oldest_child   = age_years > age_oldest_child   ? age_years : age_oldest_child
             min_age = max(0,  age_youngest_child - 3 * (nc - 1))
             max_age = min(17, age_oldest_child   + 3 * (nc - 1))
         end

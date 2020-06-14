@@ -1,4 +1,4 @@
-module people
+module persons
 
 export Person, age
 
@@ -55,6 +55,27 @@ function age(person::Person, dt::Date, unit::Symbol)
         error("Unknown time unit: $(unit)")
     end
     result
+end
+
+"""
+- Sort people
+- Rewrite their ids in order
+- Return age2first, where people[age2first[i]] is the first agent with age i
+"""
+function construct_age2firstindex!(people::Vector{Person}, dt)
+    sort!(people, by=(x) -> x.birthdate, rev=true)  # Sort from youngest to oldest
+    age2first   = Dict{Int, Int}()  # age => first index containing age
+    current_age = -1
+    for i = 1:length(people)
+        person    = people[i]
+        person.id = i
+        age_years = age(person, dt, :year)
+        if age_years != current_age
+            current_age = age_years
+            age2first[current_age] = i
+        end
+    end
+    age2first
 end
 
 end
