@@ -2,7 +2,7 @@ module Demographics
 
 export Person, Household, School,  # Types
        contactids, workplaces, communitycontacts, socialcontacts,  # Constants
-       populate_contacts!  # Functions
+       populate_contacts!, get_contactlist  # Functions
 
 using Dates
 using Distributions
@@ -38,6 +38,94 @@ function populate_contacts!(people::Vector{Person}, params, indata, dt::Date)
     populate_community_contacts!(people)
     @info "$(now()) Populating social networks"
     populate_social_contacts!(people)
+end
+
+function get_contactlist(person::Person, network::Symbol, params)
+    ncontacts = 0
+    if network == :household
+        ncontacts = get_household_contactids!(person.i_household, person.id, contactids)
+    elseif network == :school
+        ncontacts = isnothing(person.school) ? 0 : get_school_contactids!(person.school, contactids)
+    elseif network == :workplace
+        if !isnothing(person.ij_workplace)
+            i, j = person.ij_workplace
+            ncontacts = get_regular_graph_contactids!(workplaces._workplaces[i], j, params[:n_workplace_contacts], contactids)
+        end
+    elseif network == :community
+        ncontacts = get_regular_graph_contactids!(community_networks.communitycontacts, person.i_community, params[:n_community_contacts], contactids)
+    elseif network == :social
+        ncontacts = get_regular_graph_contactids!(social_networks.socialcontacts, person.i_social, params[:n_social_contacts], contactids)
+    end
+    ncontacts
+end
+
+function get_household_contactids!(i_household, personid, contactids)
+    j = 0
+    flds = (:adults, :children)
+    household = households._households[i_household]
+    for fld in flds
+        contactlist = getfield(household, fld)
+        for contactid in contactlist
+            contactid == personid && continue
+            j += 1
+            contactids[j] = contactid
+        end
+    end
+    j
+end
+
+function get_school_contactids!(contactlist::Vector{Int}, contactids)
+    ncontacts = length(contactlist)
+    for j = 1:ncontacts
+        contactids[j] = contactlist[j]
+    end
+    ncontacts
+end
+
+"""
+Modified: contactids.
+
+Populate contactids (global) with the person's contact IDs and return the number of contacts j.
+I.e., contactids[1:j] is the required contact list.
+
+The contacts are derived from a regular graph with ncontacts_per_person for each node.
+"""
+function get_regular_graph_contactids!(community::Vector{Int}, i_person::Int, ncontacts_per_person::Int, contactids::Vector{Int})
+    i_person == 0 && return 0
+    j = 0  # Index of contactids
+    npeople = length(community)
+    ncontacts_per_person = min(npeople - 1, ncontacts_per_person)
+    halfn   = div(ncontacts_per_person, 2)
+    i1 = rem(i_person - halfn + npeople, npeople)
+    i1 = i1 == 0 ? npeople : i1
+    i2 = rem(i_person + halfn, npeople)
+    i2 = i2 == 0 ? npeople : i2
+    if i1 < i2
+        for i = i1:i2
+            i == i_person && continue
+            j += 1
+            contactids[j] = community[i]
+        end
+    elseif i1 > i2
+        for i = i1:npeople
+            i == i_person && continue
+            j += 1
+            contactids[j] = community[i]
+        end
+        for i = 1:i2
+            i == i_person && continue
+            j += 1
+            contactids[j] = community[i]
+        end
+    end
+    if isodd(ncontacts_per_person)
+        i  = rem(i_person + div(npeople, 2), npeople)
+        i  = i == 0 ? npeople : i
+        i == i_person && return j
+        j += 1
+        contactids[j] = community[i]
+    end
+    j
 end
 
 end
