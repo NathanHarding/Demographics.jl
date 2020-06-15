@@ -6,15 +6,15 @@ using Random
 
 const socialcontacts = Int[]   # Contains person IDs. Social contacts can be derived for each person.
 
-function populate_social_contacts!(agents)
-    npeople = length(agents)
+function populate_social_contacts!(people)
+    npeople = length(people)
     for i = 1:npeople
-        push!(socialcontacts, agents[i].id)
+        push!(socialcontacts, people[i].id)
     end
     shuffle!(socialcontacts)
     for i = 1:npeople
         id = socialcontacts[i]
-        agents[id].i_social = i
+        people[id].i_social = i
     end
 end
 

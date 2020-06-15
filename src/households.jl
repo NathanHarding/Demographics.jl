@@ -45,9 +45,9 @@ function push_child!(hh::Household, id)
     true  # Success
 end
 
-function populate_households!(people, age2first, household_distribution::DataFrame, dt::Date)
+function populate_households!(people, dt::Date, age2first, household_distribution::DataFrame)
     @info "$(now()) Populating households with children"
-    populate_households_with_children!(people, age2first, household_distribution, dt)
+    populate_households_with_children!(people, dt, age2first, household_distribution)
     @info "$(now()) Populating households without children"
     populate_households_without_children!(people, household_distribution)
 end
@@ -68,7 +68,7 @@ while n_unplaced_children > 0
        - adults at least 20 years older than oldest child
     set household contacts
 """
-function populate_households_with_children!(agents, age2first, household_distribution, dt)
+function populate_households_with_children!(people, dt, age2first, household_distribution)
     family_household_distribution = construct_child_household_distribution(household_distribution)
     unplaced_children = Set(1:(age2first[18] - 1))
     unplaced_parents  = Set((age2first[20]):(age2first[55] - 1))  # Parents of children under 18 are adults aged between 20 and 54
@@ -89,7 +89,7 @@ function populate_households_with_children!(agents, age2first, household_distrib
             childid = sample_person(unplaced_children, min_age, max_age, age2first)
             pop!(unplaced_children, childid)
             push_child!(hh, childid)
-            child = agents[childid]
+            child = people[childid]
             child.i_household = idx
             age_years = age(child, dt, :year)
             age_youngest_child = age_years < age_youngest_child ? age_years : age_youngest_child
@@ -105,7 +105,7 @@ function populate_households_with_children!(agents, age2first, household_distrib
             parentid = sample_person(unplaced_parents, min_parent_age, max_parent_age, age2first)
             pop!(unplaced_parents, parentid)
             push_adult!(hh, parentid)
-            agents[parentid].i_household = idx
+            people[parentid].i_household = idx
         end
         push!(_households, hh)
 
@@ -150,9 +150,9 @@ while n_unplaced_adults > 0
         - No constraints at the moment
     set household contacts
 """
-function populate_households_without_children!(agents, household_distribution::DataFrame)
+function populate_households_without_children!(people, household_distribution::DataFrame)
     nonfamily_household_distribution = construct_nonchild_household_distribution(household_distribution)
-    unplaced_adults = Set([agent.id for agent in agents if agent.i_household == 0])
+    unplaced_adults = Set([person.id for person in people if person.i_household == 0])
     imax = length(unplaced_adults)
     for i = 1:imax  # Cap the number of iterations by placing at least 1 child per iteration
         # Init household
@@ -165,7 +165,7 @@ function populate_households_without_children!(agents, household_distribution::D
             adultid = rand(unplaced_adults)
             pop!(unplaced_adults, adultid)
             push_adult!(hh, adultid)
-            agents[adultid].i_household = idx
+            people[adultid].i_household = idx
         end
         push!(_households, hh)
 

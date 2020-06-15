@@ -9,8 +9,8 @@ function append_contact!(personid, contactid::Int, contactlist::Vector{Int})
     push!(contactlist, contactid)
 end
 
-"Randomly assign ncontacts to each agent whose id is a value of vertexid2agentid."
-function assign_contacts_regulargraph!(people, contactcategory::Symbol, ncontacts::Int, vertexid2agentid)
+"Randomly assign ncontacts to each person whose id is a value of vertexid2personid."
+function assign_contacts_regulargraph!(people, contactcategory::Symbol, ncontacts::Int, vertexid2personid)
     nvertices = length(vertexid2personid)
     ncontacts = adjust_ncontacts_for_regular_graph(nvertices, ncontacts)  # Ensure a regular graph can be constructed
     g = random_regular_graph(nvertices, ncontacts)  # nvertices each with ncontacts (edges to ncontacts other vertices)
@@ -45,7 +45,7 @@ function adjust_ncontacts_for_regular_graph(nvertices, ncontacts)
 end
 
 """
-Return the id of a random agent whose is unplaced and in the specified age range.
+Return the id of a random person whose is unplaced and in the specified age range.
 If one doesn't exist return a random id from unplaced_people.
 """
 function sample_person(unplaced_people::Set{Int}, min_age, max_age, age2first)

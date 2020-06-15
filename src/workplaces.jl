@@ -1,15 +1,18 @@
 module workplaces
 
-export populate_workplace_contacts!
+export populate_workplaces!
 
 using DataFrames
+using Dates
 using Distributions
+
+using ..persons
 
 const _workplaces = Vector{Int}[]  # workplaces[i][j] is the id of the jth worker in the ith workplace.
 
-function populate_workplace_contacts!(agents, ncontacts, workplace_distribution::DataFrame)
+function populate_workplaces!(people, dt::Date, workplace_distribution::DataFrame)
     d_nworkers       = Categorical(workplace_distribution.proportion)  # Categories are: 0 employees, 1-4, 5-19, 20-199, 200+
-    unplaced_workers = Set([agent.id for agent in agents if agent.age > 23 && isnothing(agent.school)])
+    unplaced_workers = Set([person.id for person in people if age(person, dt, :year) > 23 && isnothing(person.school)])
     imax = length(unplaced_workers)
     for i = 1:imax
         isempty(unplaced_workers) && break
@@ -21,7 +24,7 @@ function populate_workplace_contacts!(agents, ncontacts, workplace_distribution:
             workerid = rand(unplaced_workers)
             pop!(unplaced_workers, workerid)
             workplace[j] = workerid
-            agents[workerid].ij_workplace = (idx, j)
+            people[workerid].ij_workplace = (idx, j)
         end
         push!(_workplaces, workplace)
     end
