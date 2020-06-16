@@ -19,13 +19,13 @@ mutable struct Person{A, S}
     i_social::Int     # Family and/or friends outside the household. socialcontacts[i_social] == person.id
 end
 
-Person(id, birthdate, sex, address, state) = Person(id, birthdate, sex, address, state, 0, nothing, nothing, 0, 0)
+Person{A, S}(id, birthdate, sex, address, state) where {A, S} = Person(id, birthdate, sex, address::A, state::S, 0, nothing, nothing, 0, 0)
 
 ################################################################################
 # Convenience functions
 
 "Age of person on dt, with unit one of :day, :month or :year."
-function age(person::Person, dt::Date, unit::Symbol)
+function age(person::Person{A, S}, dt::Date, unit::Symbol) where {A, S}
     birthdate = person.birthdate
     dt < birthdate && return nothing
     result = 0
@@ -62,7 +62,7 @@ end
 - Rewrite their ids in order
 - Return age2first, where people[age2first[i]] is the first agent with age i
 """
-function construct_age2firstindex!(people::Vector{Person}, dt)
+function construct_age2firstindex!(people::Vector{Person{A, S}}, dt) where {A, S}
     sort!(people, by=(x) -> x.birthdate, rev=true)  # Sort from youngest to oldest
     age2first   = Dict{Int, Int}()  # age => first index containing age
     current_age = -1

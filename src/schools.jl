@@ -157,7 +157,7 @@ function set_student_to_student_contacts!(people, school::School, ncontacts_s2s)
         isempty(students) && continue
         nstudents        = length(students)
         vertexid2personid = Dict(i => students[i] for i = 1:nstudents)
-        assign_contacts_regulargraph!(people, :school, min(Int(ncontacts_s2s), nstudents), vertexid2personid)
+        assign_contacts_regulargraph!(people, :school, min(ncontacts_s2s, nstudents), vertexid2personid)
     end
 end
 
@@ -166,7 +166,7 @@ function set_teacher_to_teacher_contacts!(people, school::School, ncontacts_t2t)
     isempty(teachers) && return
     nteachers        = length(teachers)
     vertexid2personid = Dict(i => teachers[i] for i = 1:nteachers)
-    assign_contacts_regulargraph!(people, :school, min(Int(ncontacts_t2t), nteachers), vertexid2personid)
+    assign_contacts_regulargraph!(people, :school, min(ncontacts_t2t, nteachers), vertexid2personid)
 end
 
 function set_teacher_to_student_contacts!(people, school::School, ncontacts_t2s)
@@ -181,7 +181,7 @@ function set_teacher_to_student_contacts!(people, school::School, ncontacts_t2s)
 
     # For each teacher, cycle through the students until the teacher has enough contacts
     teachers = school.teachers
-    ncontacts_t2s = Int(min(ncontacts_t2s, nstudents))  # Can't contact more students than are in the school
+    ncontacts_t2s = min(ncontacts_t2s, nstudents)  # Can't contact more students than are in the school
     idx = 0
     for teacherid in teachers
         teacher_contactlist = people[teacherid].school

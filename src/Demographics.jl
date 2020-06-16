@@ -26,12 +26,12 @@ using .community_networks
 
 const contactids = fill(0, 100)   # Buffer for a mutable contact list
 
-function populate_contacts!(people::Vector{Person}, params, indata, dt::Date)
+function populate_contacts!(people::Vector{Person{A, S}}, params, indata, dt::Date) where {A, S}
     age2first = persons.construct_age2firstindex!(people, dt)  # people[age2first[i]] is the first agent with age i
     populate_households!(people, dt, age2first, indata["household_distribution"])
     @info "$(now()) Populating schools"
     populate_school_contacts!(people, dt, age2first, indata["primaryschool_distribution"], indata["secondaryschool_distribution"],
-                              params[:ncontacts_s2s], params[:ncontacts_t2t], params[:ncontacts_t2s])
+                              Int(params[:ncontacts_s2s]), Int(params[:ncontacts_t2t]), Int(params[:ncontacts_t2s]))
     @info "$(now()) Populating work places"
     populate_workplaces!(people, dt, indata["workplace_distribution"])
     @info "$(now()) Populating communities"
@@ -40,7 +40,7 @@ function populate_contacts!(people::Vector{Person}, params, indata, dt::Date)
     populate_social_contacts!(people)
 end
 
-function get_contactlist(person::Person, network::Symbol, params)
+function get_contactlist(person::Person{A, S}, network::Symbol, params) where {A, S}
     ncontacts = 0
     if network == :household
         ncontacts = get_household_contactids!(person.i_household, person.id, contactids)
@@ -49,12 +49,12 @@ function get_contactlist(person::Person, network::Symbol, params)
     elseif network == :workplace
         if !isnothing(person.ij_workplace)
             i, j = person.ij_workplace
-            ncontacts = get_regular_graph_contactids!(workplaces._workplaces[i], j, params[:n_workplace_contacts], contactids)
+            ncontacts = get_regular_graph_contactids!(workplaces._workplaces[i], j, Int(params[:n_workplace_contacts]), contactids)
         end
     elseif network == :community
-        ncontacts = get_regular_graph_contactids!(community_networks.communitycontacts, person.i_community, params[:n_community_contacts], contactids)
+        ncontacts = get_regular_graph_contactids!(community_networks.communitycontacts, person.i_community, Int(params[:n_community_contacts]), contactids)
     elseif network == :social
-        ncontacts = get_regular_graph_contactids!(social_networks.socialcontacts, person.i_social, params[:n_social_contacts], contactids)
+        ncontacts = get_regular_graph_contactids!(social_networks.socialcontacts, person.i_social, Int(params[:n_social_contacts]), contactids)
     end
     ncontacts
 end
