@@ -1,8 +1,19 @@
 module utils
 
-export sample_person, append_contact!, assign_contacts_regulargraph!
+export import_data, sample_person, append_contact!, assign_contacts_regulargraph!
 
+using CSV
+using DataFrames
 using LightGraphs
+
+function import_data(datadir::String, tablename2datafile::Dict{String, String})
+    result = Dict{String, DataFrame}()
+    for (tablename, datafile) in tablename2datafile
+        filename = joinpath(datadir, datafile)
+        result[tablename] = DataFrame(CSV.File(filename))
+    end
+    result
+end
 
 function append_contact!(personid, contactid::Int, contactlist::Vector{Int})
     personid == contactid && return
