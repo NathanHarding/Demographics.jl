@@ -1,15 +1,16 @@
 using Test
 using Demographics
 
-# Construct population
+using Dates
+using Logging
+
+@info "$(now()) Constructing population"
 configfile = joinpath(pwd(), "config", "config.yml")
 people = construct_population(configfile)
 
-# Save population to disk (as well as households, workplaces, social contacts and community contacts)
+@info "$(now()) Saving population to disk"  # As well as households, workplaces, social contacts and community contacts
 outfile = joinpath(pwd(), "data", "output", "population.json")
 save(people, outfile)
 
-#=
-# Load population from disk (as well as households, workplaces, social contacts and community contacts)
-pop = load(outfile)
-=#
+@info "$(now()) Loading population from disk"  # As well as households, workplaces, social contacts and community contacts
+popn = load(outfile)
