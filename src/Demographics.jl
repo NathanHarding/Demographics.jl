@@ -2,7 +2,7 @@ module Demographics
 
 export Person,     # Types
        contactids, # Constants
-       construct_population, get_contactlist, save, load  # Functions
+       construct_population, get_contactlist, getcontact, save, load  # Functions
 
 using Dates
 using Distributions
@@ -23,7 +23,10 @@ using .saveload
 function construct_population(configfile::String)
     @info "$(now()) Configuring run"
     cfg = Config(configfile)
+    construct_population(cfg)
+end
 
+function construct_population(cfg::Config)
     @info "$(now()) Importing input data"
     indata = import_data(cfg.input_datadir, cfg.input_datafiles)
 

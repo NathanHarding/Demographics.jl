@@ -1,6 +1,6 @@
 module contacts
 
-export populate_contacts!, get_contactlist
+export populate_contacts!, get_contactlist, getcontact
 
 using Dates
 using Logging
@@ -21,6 +21,8 @@ using .social_networks
 using .community_networks
 
 const contactids = fill(0, 100)   # Buffer for a mutable contact list
+
+getcontact(i) = contactids[i]
 
 function populate_contacts!(people::Vector{Person{A, S}}, params, indata, dt::Date) where {A, S}
     age2first = persons.construct_age2firstindex!(people, dt)  # people[age2first[i]] is the first agent with age i
