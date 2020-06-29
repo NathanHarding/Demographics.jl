@@ -3,7 +3,10 @@
   The intermediate data is copied from the raw Excel spreadsheet sourced from the ABS.
 =#
 
-cd("C:\\projects\\repos\\Covid.jl")
+cd("H:\\Documents\\data\\")
+data_dir = "H:\\Documents\\data\\"
+out_dir = "H:\\Documents\\data\\"
+subpop_module = false # will be moved to input arg
 using Pkg
 Pkg.activate(".")
 
@@ -90,15 +93,22 @@ end
 # Script
 
 # Get input data
-infile = "C:\\projects\\data\\dhhs\\covid-abm\\input\\intermediate\\asgs_codes.tsv"
+infile = data_dir * "asgs_codes.tsv"
 codes  = DataFrame(CSV.File(infile; delim='\t'))
-infile = "C:\\projects\\data\\dhhs\\covid-abm\\input\\intermediate\\family_household_composition.tsv"
+if subpop_module
+	infile = data_dir * "SA2_subset.csv"
+	target_SA2_list = Matrix(CSV.read(infile, type = Int64))
+	codes = codes[findall(in(target_SA2_list),codes.SA2_MAINCODE_2016),:]
+end
+infile = data_dir * "family_household_composition.tsv"
 hh_composition = DataFrame(CSV.File(infile; delim='\t'))
 hh_composition = join(hh_composition, codes, on=:SA2_NAME_2016, kind=:left)
-infile  = "C:\\projects\\data\\dhhs\\covid-abm\\input\\intermediate\\household_size.tsv"
+infile  = data_dir * "household_size.tsv"
 hh_size = DataFrame(CSV.File(infile; delim='\t'))
 
 # Construct result
 households = construct_household_counts(hh_size, hh_composition)
-outfile = "C:\\projects\\data\\dhhs\\covid-abm\\input\\consumable\\households.tsv"
+outfile = data_dir * "households.tsv"
 CSV.write(outfile, households; delim='\t')
+
+cd("H:\\Documents\\dev\\Demographics.jl")

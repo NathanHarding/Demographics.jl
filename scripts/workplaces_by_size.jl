@@ -3,7 +3,11 @@
   The intermediate data is copied from the raw Excel spreadsheet sourced from the ABS.
 =#
 
-cd("C:\\projects\\repos\\Covid.jl")
+
+data_dir = "H:\\Documents\\data\\"
+out_dir = "H:\\Documents\\data\\"
+subpop_module = false
+cd(data_dir)
 using Pkg
 Pkg.activate(".")
 
@@ -52,21 +56,29 @@ end
 # Script
 
 # Get data
-infile = "C:\\projects\\data\\dhhs\\covid-abm\\input\\intermediate\\workplace_size_by_industry_by_SA2.tsv"
-data   = DataFrame(CSV.File(infile; delim='\t'))
+infile = data_dir * "workplace_size_by_industry_by_SA2.tsv"
+data   = DataFrame(CSV.File(infile; delim='\t',types = Dict(5=>Int64,6=>Int64,7=>Int64,8=>Int64,9=>Int64)))
 
-# Exclude non-VIC data
-data.SA2_code = [ismissing(x) ? missing : string(x) for x in data.SA2_code]
-keep = [!ismissing(x) && x[1] == '2' for x in data.SA2_code]
-data = data[keep, :]
-keep = nothing
+if subpop_module
+    infile = data_dir * "SA2_subset.csv"
+    target_SA2_list = Matrix(CSV.read(infile, type = Int64))
+    data = data[findall(in(target_SA2_list),data.SA2_code),:]
+end
+if !subpop_module
+    data.SA2_code = [ismissing(x) ? missing : string(x) for x in data.SA2_code]
+    keep = [!ismissing(x) && x[1] == '2' for x in data.SA2_code]
+    data = data[keep, :]
+    keep = nothing
+end
+
+# Take data from selected regions
+
 
 # Count groups
 colnames  = [:nemployees_0, :nemployees_1to4, :nemployees_5to19, :nemployees_20to199, :nemployees_200plus]
 grp2count = count_employees(data, colnames)
-# Check: sum(0.5 * (k[1] + k[2] + 1)*v for (k,v) in grp2count)  # Should be around 6,400,000 (Vic population)
 
 # Construct result and write to disk
 data    = counts_to_table(grp2count)
-outfile = "C:\\projects\\data\\dhhs\\covid-abm\\input\\consumable\\workplace_by_size_VIC.tsv"
+outfile = out_dir * "workplace_by_size_VIC.tsv"
 CSV.write(outfile, data; delim='\t')
