@@ -3,9 +3,9 @@
   The intermediate data is copied from the raw Excel spreadsheet sourced from the ABS.
 =#
 
-data_dir = "H:\\Documents\\data\\"
-subpop_module = true
-cd(data_dir)
+using YAML
+cfg = YAML.load(open("scripts\\config.yml"))
+cd(cfg["output_datadir"])
 using Pkg
 Pkg.activate(".")
 
@@ -56,25 +56,25 @@ end
 
 ################################################################################
 # Script
-infile = data_dir * "SA2_subset.csv"
+infile = cfg["input_datadir"] * "SA2_subset.csv"
 target_SA2_list = CSV.read(infile, type = Int64)
 target_SA2_list = Matrix(target_SA2_list)
 # Get data
-infile = data_dir * "year_level_sizes_by_school.tsv"
+infile = cfg["input_datadir"] * "year_level_sizes_by_school.tsv"
 data   = DataFrame(CSV.File(infile; delim='\t'))
 
 # Convert to long form for Power BI. Columns: school_name, year_level, count
 data    = longify(data)
-outfile = data_dir * "year_level_sizes_by_school_longform.tsv"
+outfile = cfg["output_datadir"] * "year_level_sizes_by_school_longform.tsv"
 CSV.write(outfile, data; delim='\t')
 
 # Construct result. Columns: avg_year_level_size_lb, avg_year_level_size_ub, count, proportion
 primary = data[data[!, :year_level] .<= 6, :]
 primary = avg_year_level_size(primary)
-outfile = data_dir * "avg_yearlevel_size_distribution_primary.tsv"
+outfile = cfg["output_datadir"] * "avg_yearlevel_size_distribution_primary.tsv"
 CSV.write(outfile, primary; delim='\t')
 
 secondary = data[data[!, :year_level] .>= 7, :]
 secondary = avg_year_level_size(secondary)
-outfile   = data_dir * "avg_yearlevel_size_distribution_secondary.tsv"
+outfile   = cfg["ouput_datadir"] * "avg_yearlevel_size_distribution_secondary.tsv"
 CSV.write(outfile, secondary; delim='\t')

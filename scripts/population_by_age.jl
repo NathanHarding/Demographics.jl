@@ -2,11 +2,9 @@
   Contents: Script for constructing population by age by SA2.
   The intermediate data is copied from the raw Excel spreadsheet sourced from the ABS.
 =#
-
-data_dir = "H:\\Documents\\data\\"
-out_dir = "H:\\Documents\\data\\"
-subpop_module = true
-cd(data_dir)
+using YAML
+cfg = YAML.load(open("scripts\\config.yml"))
+cd(cfg["output_datadir"])
 using Pkg
 Pkg.activate(".")
 
@@ -39,20 +37,19 @@ end
 
 # Get data
 
-infile = data_dir * "asgs_codes.tsv"
+infile = cfg["input_datadir"] * "asgs_codes.tsv"
 codes  = DataFrame(CSV.File(infile; delim='\t'))
-infile = data_dir * "population_by_age_by_sa2.tsv"
+infile = cfg["input_datadir"] * "population_by_age_by_sa2.tsv"
 data   = DataFrame(CSV.File(infile; delim='\t'))
 data   = join(codes, data, on=:SA2_NAME_2016, kind=:left)
 data   = data[data.STATE_NAME_2016 .== "Victoria", :]
-show(size(data.STATE_NAME_2016))
 # Format and write to disk
-if subpop_module
-    infile = data_dir * "SA2_subset.csv"
+if cfg["subpop_module"]
+    infile = cfg["input_datadir"] * "SA2_subset.csv"
     target_SA2_list = Matrix(CSV.read(infile, type = Int64))
     data = data[findall(in(target_SA2_list),data.SA2_MAINCODE_2016),:]
 end
 data    = age_distribution(data)  # Columns: age, count
 data    = data[data.count .> 0, :]
-outfile = out_dir * "population_by_age_VIC.tsv"
+outfile = cfg["output_datadir"] * "population_by_age_VIC.tsv"
 CSV.write(outfile, data; delim='\t')

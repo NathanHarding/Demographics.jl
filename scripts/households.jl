@@ -3,10 +3,9 @@
   The intermediate data is copied from the raw Excel spreadsheet sourced from the ABS.
 =#
 
-cd("H:\\Documents\\data\\")
-data_dir = "H:\\Documents\\data\\"
-out_dir = "H:\\Documents\\data\\"
-subpop_module = false # will be moved to input arg
+using YAML
+cfg = YAML.load(open("scripts\\config.yml"))
+cd(cfg["output_datadir"])
 using Pkg
 Pkg.activate(".")
 
@@ -93,22 +92,20 @@ end
 # Script
 
 # Get input data
-infile = data_dir * "asgs_codes.tsv"
+infile = cfg["input_datadir"] * "asgs_codes.tsv"
 codes  = DataFrame(CSV.File(infile; delim='\t'))
-if subpop_module
-	infile = data_dir * "SA2_subset.csv"
+if cfg["subpop_module"]
+	infile = cfg["input_datadir"] * "SA2_subset.csv"
 	target_SA2_list = Matrix(CSV.read(infile, type = Int64))
 	codes = codes[findall(in(target_SA2_list),codes.SA2_MAINCODE_2016),:]
 end
-infile = data_dir * "family_household_composition.tsv"
+infile = cfg["input_datadir"] * "family_household_composition.tsv"
 hh_composition = DataFrame(CSV.File(infile; delim='\t'))
 hh_composition = join(hh_composition, codes, on=:SA2_NAME_2016, kind=:left)
-infile  = data_dir * "household_size.tsv"
+infile  = cfg["input_datadir"] * "household_size.tsv"
 hh_size = DataFrame(CSV.File(infile; delim='\t'))
 
 # Construct result
 households = construct_household_counts(hh_size, hh_composition)
-outfile = data_dir * "households.tsv"
+outfile = cfg["output_datadir"] * "households.tsv"
 CSV.write(outfile, households; delim='\t')
-
-cd("H:\\Documents\\dev\\Demographics.jl")

@@ -4,10 +4,9 @@
 =#
 
 
-data_dir = "H:\\Documents\\data\\"
-out_dir = "H:\\Documents\\data\\"
-subpop_module = false
-cd(data_dir)
+using YAML
+cfg = YAML.load(open("scripts\\config.yml"))
+cd(cfg["output_datadir"])
 using Pkg
 Pkg.activate(".")
 
@@ -56,15 +55,15 @@ end
 # Script
 
 # Get data
-infile = data_dir * "workplace_size_by_industry_by_SA2.tsv"
+infile = cfg["input_datadir"] * "workplace_size_by_industry_by_SA2.tsv"
 data   = DataFrame(CSV.File(infile; delim='\t',types = Dict(5=>Int64,6=>Int64,7=>Int64,8=>Int64,9=>Int64)))
 
-if subpop_module
-    infile = data_dir * "SA2_subset.csv"
+if cfg["subpop_module"]
+    infile = cfg["input_datadir"] * "SA2_subset.csv"
     target_SA2_list = Matrix(CSV.read(infile, type = Int64))
     data = data[findall(in(target_SA2_list),data.SA2_code),:]
 end
-if !subpop_module
+if !cfg["subpop_module"]
     data.SA2_code = [ismissing(x) ? missing : string(x) for x in data.SA2_code]
     keep = [!ismissing(x) && x[1] == '2' for x in data.SA2_code]
     data = data[keep, :]
@@ -80,5 +79,5 @@ grp2count = count_employees(data, colnames)
 
 # Construct result and write to disk
 data    = counts_to_table(grp2count)
-outfile = out_dir * "workplace_by_size_VIC.tsv"
+outfile = cfg["output_datadir"] * "workplace_by_size_VIC.tsv"
 CSV.write(outfile, data; delim='\t')

@@ -1,0 +1,4 @@
+input_datadir:  "H:\\Documents\\data\\"   # When testing this dir is H:\\Documents\\data
+output_datadir: "H:\\Documents\\data\\"   # When testing this dir is H:\\Documents\\data\\
+home_dir: "H:\\Documents\\dev\\Demographics.jl"
+subpop_module: true #Boolean for including subpopulation generation
