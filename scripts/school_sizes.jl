@@ -71,14 +71,13 @@ locations = innerjoin(profile,locations,on="ACARA_SML_ID",makeunique=true)
 
 if cfg["subpop_module"]
     infile = cfg["input_datadir"] * "SA2_subset.csv"
-    target_SA2_list = Matrix(CSV.read(infile, type = Int64))
-    locations = locations[findall(in(target_SA2_list),locations.SA2_code),:]
+    target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
+    locations = locations[findall(in(target_SA2_list.SA2_code),locations.SA2_code),:]
 end
 #General data for year level splits
 infile = cfg["input_datadir"] * "year_level_sizes_by_school.tsv"
 data   = DataFrame(CSV.File(infile; delim='\t'))
 data = data[findall(in(locations.School_name),data.school_name),:]
-show(data)
 
 # Convert to long form for Power BI. Columns: school_name, year_level, count
 data    = longify(data)

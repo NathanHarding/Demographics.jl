@@ -40,9 +40,9 @@ end
 #Script
 
 infile = cfg["input_datadir"] * "subset_regions.tsv"
-subset_regions = DataFrame(CSV.read(infile;delim='\t'))
+subset_regions = DataFrame(CSV.File(infile;delim='\t'))
 infile = cfg["input_datadir"] * "ASGS_codes.tsv"
-all_regions = DataFrame(CSV.read(infile;delim='\t'))
+all_regions = DataFrame(CSV.File(infile;delim='\t'))
 
 sa2_subset = loop(subset_regions,all_regions)
 sa2_subset = DataFrame(SA2_code = sa2_subset)

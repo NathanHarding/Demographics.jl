@@ -46,10 +46,10 @@ data   = data[data.STATE_NAME_2016 .== "Victoria", :]
 # Format and write to disk
 if cfg["subpop_module"]
     infile = cfg["input_datadir"] * "SA2_subset.csv"
-    target_SA2_list = Matrix(CSV.read(infile, type = Int64))
-    data = data[findall(in(target_SA2_list),data.SA2_MAINCODE_2016),:]
+    target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
+    data = data[findall(in(target_SA2_list.SA2_code),data.SA2_MAINCODE_2016),:]
 end
 data    = age_distribution(data)  # Columns: age, count
 data    = data[data.count .> 0, :]
-outfile = cfg["output_datadir"] * "population_by_age_VIC.tsv"
+outfile = cfg["output_datadir"] * "population_by_age.tsv"
 CSV.write(outfile, data; delim='\t')

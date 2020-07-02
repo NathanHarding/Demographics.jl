@@ -60,8 +60,8 @@ data   = DataFrame(CSV.File(infile; delim='\t',types = Dict(5=>Int64,6=>Int64,7=
 
 if cfg["subpop_module"]
     infile = cfg["input_datadir"] * "SA2_subset.csv"
-    target_SA2_list = Matrix(CSV.read(infile, type = Int64))
-    data = data[findall(in(target_SA2_list),data.SA2_code),:]
+    target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
+    data = data[findall(in(target_SA2_list.SA2_code),data.SA2_code),:]
 end
 if !cfg["subpop_module"]
     data.SA2_code = [ismissing(x) ? missing : string(x) for x in data.SA2_code]

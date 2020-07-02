@@ -96,8 +96,8 @@ infile = cfg["input_datadir"] * "asgs_codes.tsv"
 codes  = DataFrame(CSV.File(infile; delim='\t'))
 if cfg["subpop_module"]
 	infile = cfg["input_datadir"] * "SA2_subset.csv"
-	target_SA2_list = Matrix(CSV.read(infile, type = Int64))
-	codes = codes[findall(in(target_SA2_list),codes.SA2_MAINCODE_2016),:]
+	target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
+	codes = codes[findall(in(target_SA2_list.SA2_code),codes.SA2_MAINCODE_2016),:]
 end
 infile = cfg["input_datadir"] * "family_household_composition.tsv"
 hh_composition = DataFrame(CSV.File(infile; delim='\t'))
