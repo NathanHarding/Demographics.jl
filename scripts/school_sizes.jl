@@ -54,14 +54,31 @@ function avg_year_level_size(data::DataFrame)
     sort!(result, :avg_year_level_size_lb)
 end
 
+
+
 ################################################################################
 # Script
-infile = cfg["input_datadir"] * "SA2_subset.csv"
-target_SA2_list = CSV.read(infile, type = Int64)
-target_SA2_list = Matrix(target_SA2_list)
+# 
+
 # Get data
+
+#ACARA specific data
+infile = cfg["input_datadir"] * "ACARA_school_locations.tsv"
+locations = DataFrame(CSV.File(infile; delim='\t'))
+infile = cfg["input_datadir"] * "ACARA_school_profile.tsv"
+profile = DataFrame(CSV.File(infile; delim='\t'))
+locations = innerjoin(profile,locations,on="ACARA_SML_ID",makeunique=true)
+
+if cfg["subpop_module"]
+    infile = cfg["input_datadir"] * "SA2_subset.csv"
+    target_SA2_list = Matrix(CSV.read(infile, type = Int64))
+    locations = locations[findall(in(target_SA2_list),locations.SA2_code),:]
+end
+#General data for year level splits
 infile = cfg["input_datadir"] * "year_level_sizes_by_school.tsv"
 data   = DataFrame(CSV.File(infile; delim='\t'))
+data = data[findall(in(locations.School_name),data.school_name),:]
+show(data)
 
 # Convert to long form for Power BI. Columns: school_name, year_level, count
 data    = longify(data)
@@ -76,5 +93,10 @@ CSV.write(outfile, primary; delim='\t')
 
 secondary = data[data[!, :year_level] .>= 7, :]
 secondary = avg_year_level_size(secondary)
-outfile   = cfg["ouput_datadir"] * "avg_yearlevel_size_distribution_secondary.tsv"
+outfile   = cfg["output_datadir"] * "avg_yearlevel_size_distribution_secondary.tsv"
+CSV.write(outfile, secondary; delim='\t')
+
+#Output school locations and types
+#locations[findall(x->x == "Primary",locations.School_type),:]
+outfile   = cfg["output_datadir"] * "schools_VIC_precise.tsv"
 CSV.write(outfile, secondary; delim='\t')
