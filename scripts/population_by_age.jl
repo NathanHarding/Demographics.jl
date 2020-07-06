@@ -32,6 +32,7 @@ function age_distribution(data::DataFrame)
     result
 end
 
+
 ################################################################################
 # Script
 
@@ -49,6 +50,11 @@ if cfg["subpop_module"]
     target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
     data = data[findall(in(target_SA2_list.SA2_code),data.SA2_MAINCODE_2016),:]
 end
+data_sp = sum.(eachrow(data[13:128]))
+data_sp = DataFrame(SA2_code = data.SA2_MAINCODE_2016,population = data_sp)
+outfile = cfg["output_datadir"] * "population_by_SA2.tsv"
+CSV.write(outfile, data_sp; delim='\t')
+
 data    = age_distribution(data)  # Columns: age, count
 data    = data[data.count .> 0, :]
 outfile = cfg["output_datadir"] * "population_by_age.tsv"
