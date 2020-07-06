@@ -20,7 +20,7 @@ using .workplaces
 using .social_networks
 using .community_networks
 
-const contactids = fill(0, 100)   # Buffer for a mutable contact list
+const contactids = fill(0, 1000)   # Buffer for a mutable contact list
 
 getcontact(i) = contactids[i]
 
