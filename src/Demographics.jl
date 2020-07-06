@@ -32,13 +32,18 @@ function construct_population(cfg::Config)
 
     @info "$(now()) Initialising population"
     agedist = indata["age_distribution"]
+    sa2_pops = indata["cumsum_population"]
     npeople = round(Int, sum(agedist.count))
-    people  = Vector{Person{Char, Nothing}}(undef, npeople)
+    people  = Vector{Person{Int, Nothing}}(undef, npeople)
     d_age   = Categorical(agedist.proportion)
+    SA2_id = 1
     for id = 1:npeople
+        while (id - sa2_pops.cumsum_population[SA2_id] > 0)
+            SA2_id +=1
+        end
         age        = agedist[rand(d_age), :age]
         birthdate  = today() - Year(age)
-        people[id] = Person{Char, Nothing}(id, birthdate, 'o', 'x', nothing)
+        people[id] = Person{Int64, Nothing}(id, birthdate, 'o', sa2_pops.SA2_code[SA2_id], nothing)
     end
 
     @info "$(now()) Populating contacts"

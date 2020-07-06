@@ -51,7 +51,8 @@ if cfg["subpop_module"]
     data = data[findall(in(target_SA2_list.SA2_code),data.SA2_MAINCODE_2016),:]
 end
 data_sp = sum.(eachrow(data[13:128]))
-data_sp = DataFrame(SA2_code = data.SA2_MAINCODE_2016,population = data_sp)
+data_sp = DataFrame(SA2_code = data.SA2_MAINCODE_2016,cumsum_population = cumsum(data_sp))
+
 outfile = cfg["output_datadir"] * "population_by_SA2.tsv"
 CSV.write(outfile, data_sp; delim='\t')
 
