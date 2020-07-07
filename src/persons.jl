@@ -78,4 +78,18 @@ function construct_age2firstindex!(people::Vector{Person{A, S}}, dt) where {A, S
     age2first
 end
 
+function construct_age2firstindex_by_SA2(people::Vector{Person{A,S}},dt,SA2) where {A,S}
+    age2first = Dict{Int, Int}()  # age => first index containing age
+    current_age = -1
+    for i = 1:length(people)
+        person    = people[i]
+        age_years = age(person, dt, :year)
+        if age_years != current_age && person.address == SA2
+            current_age = age_years
+            age2first[current_age] = i
+        end
+    end
+    age2first
+end
+
 end

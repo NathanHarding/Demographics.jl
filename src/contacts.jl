@@ -4,6 +4,7 @@ export populate_contacts!, get_contactlist, getcontact
 
 using Dates
 using Logging
+using DataFrames
 
 using ..utils
 using ..persons
@@ -20,7 +21,7 @@ using .workplaces
 using .social_networks
 using .community_networks
 
-const contactids = fill(0, 1000)   # Buffer for a mutable contact list
+const contactids = fill(0, 100)   # Buffer for a mutable contact list
 
 getcontact(i) = contactids[i]
 
@@ -28,8 +29,10 @@ function populate_contacts!(people::Vector{Person{A, S}}, params, indata, dt::Da
     age2first = persons.construct_age2firstindex!(people, dt)  # people[age2first[i]] is the first agent with age i
     populate_households!(people, dt, age2first, indata["household_distribution"])
     @info "$(now()) Populating schools"
-    populate_school_contacts!(people, dt, age2first, indata["primaryschool_distribution"], indata["secondaryschool_distribution"],
+    populate_SA2_schools!(people, dt, indata["SA2_list"], indata["primaryschool_distribution"], indata["secondaryschool_distribution"],
                               Int(params[:ncontacts_s2s]), Int(params[:ncontacts_t2t]), Int(params[:ncontacts_t2s]))
+    # populate_school_contacts!(people, dt, age2first, indata["primaryschool_distribution"], indata["secondaryschool_distribution"],
+    #                            Int(params[:ncontacts_s2s]), Int(params[:ncontacts_t2t]), Int(params[:ncontacts_t2s]))
     @info "$(now()) Populating work places"
     populate_workplaces!(people, dt, indata["workplace_distribution"])
     @info "$(now()) Populating communities"
@@ -125,5 +128,18 @@ function get_regular_graph_contactids!(community::Vector{Int}, i_person::Int, nc
     end
     j
 end
+
+
+function populate_SA2_schools!(people,dt, SA2_list, primaryschool_distribution::DataFrame,
+                secondaryschool_distribution::DataFrame, ncontacts_s2s, ncontacts_t2t, ncontacts_t2s)
+    for SA2 in SA2_list.SA2_code
+        age2first = persons.construct_age2firstindex_by_SA2(people,dt,SA2)
+        populate_school_contacts!(people, dt, age2first, primaryschool_distribution::DataFrame, 
+                secondaryschool_distribution::DataFrame, ncontacts_s2s, ncontacts_t2t, ncontacts_t2s)
+    end
+end
+
+
+
 
 end
