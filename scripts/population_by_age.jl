@@ -14,21 +14,17 @@ using DataFrames
 ################################################################################
 # Functions
 
-function age_distribution(data::DataFrame)
-    result   = DataFrame(age=Int[], count=Int[])
-    colidx1  = findfirst(==("0"), names(data))
-    colidx2  = size(data, 2)
-    colnames = names(data)
-    ntotal   = 0
-    for j = colidx1:colidx2
-        colname = string(colnames[j])
-        coldata = data[!, j]
-        age = parse(Int, colname)
-        n   = sum(x for x in coldata if !ismissing(x))  # The last row has missing data
-        push!(result, (age=age, count=n))
-        ntotal += n
-    end
-    result[!, :proportion] = result.count ./ ntotal
+function fill_age_data_frame(data::DataFrame,SA2_list::Vector)
+    row_values = disallowmissing(Matrix(data[:,[1;13:128]]))
+    result = DataFrame(age = Vector(0:115))
+    i = 1
+    for SA2 in SA2_list
+        values = vec(row_values[findall(x->x == SA2,row_values[:,1]),2:end])   #First column contains SA2 code
+        if sum(values)!= 0
+             values = values./sum(values) #Normalise but avoid Nans
+        end
+        result[!,Symbol(SA2)] = values
+        end
     result
 end
 
@@ -49,14 +45,15 @@ if cfg["subpop_module"]
     infile = cfg["input_datadir"] * "SA2_subset.csv"
     target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
     data = data[findall(in(target_SA2_list.SA2_code),data.SA2_MAINCODE_2016),:]
+else
+    target_SA2_list = DataFrame(SA2_code = data.SA2_MAINCODE_2016)
 end
-data_sp = sum.(eachrow(data[13:128]))
+data_sp = sum.(eachrow(data[!,13:128]))
 data_sp = DataFrame(SA2_code = data.SA2_MAINCODE_2016,cumsum_population = cumsum(data_sp))
 
 outfile = cfg["output_datadir"] * "population_by_SA2.tsv"
 CSV.write(outfile, data_sp; delim='\t')
 
-data    = age_distribution(data)  # Columns: age, count
-data    = data[data.count .> 0, :]
-outfile = cfg["output_datadir"] * "population_by_age.tsv"
-CSV.write(outfile, data; delim='\t')
+result = fill_age_data_frame(data,target_SA2_list.SA2_code)
+outfile = cfg["output_datadir"] * "population_distribution_by_SA2.tsv"
+CSV.write(outfile, result; delim='\t')
