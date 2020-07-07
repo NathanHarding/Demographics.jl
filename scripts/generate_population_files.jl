@@ -22,9 +22,9 @@ function generate_input_files(subpop_module,home_dir)
     include("households.jl")
     cd(home_dir)
 
-    #@info "creating school file"
-    #include("school sizes.jl")
-    #cd(home_dir)
+    @info "creating school file"
+    include("school_sizes.jl")
+    cd(home_dir)
 end
 
 #script

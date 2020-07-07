@@ -47,6 +47,7 @@ all_regions = DataFrame(CSV.File(infile;delim='\t'))
 sa2_subset = loop(subset_regions,all_regions)
 sa2_subset = DataFrame(SA2_code = sa2_subset)
 
-ofile = cfg["output_datadir"] * "SA2_subset.csv"
-CSV.write(ofile,unique(sa2_subset))
+ofile =  "SA2_subset.tsv"
+CSV.write(cfg["input_datadir"] *ofile,unique(sa2_subset);delim='\t')
+CSV.write(cfg["output_datadir"] *ofile,unique(sa2_subset);delim='\t')
 

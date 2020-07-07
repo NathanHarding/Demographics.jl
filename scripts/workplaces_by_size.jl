@@ -59,7 +59,7 @@ infile = cfg["input_datadir"] * "workplace_size_by_industry_by_SA2.tsv"
 data   = DataFrame(CSV.File(infile; delim='\t',types = Dict(5=>Int64,6=>Int64,7=>Int64,8=>Int64,9=>Int64)))
 
 if cfg["subpop_module"]
-    infile = cfg["input_datadir"] * "SA2_subset.csv"
+    infile = cfg["input_datadir"] * "SA2_subset.tsv"
     target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
     data = data[findall(in(target_SA2_list.SA2_code),data.SA2_code),:]
 end

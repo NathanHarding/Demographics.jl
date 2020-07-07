@@ -70,7 +70,7 @@ profile = DataFrame(CSV.File(infile; delim='\t'))
 locations = innerjoin(profile,locations,on="ACARA_SML_ID",makeunique=true)
 
 if cfg["subpop_module"]
-    infile = cfg["input_datadir"] * "SA2_subset.csv"
+    infile = cfg["input_datadir"] * "SA2_subset.tsv"
     target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
     locations = locations[findall(in(target_SA2_list.SA2_code),locations.SA2_code),:]
 end
@@ -97,5 +97,6 @@ CSV.write(outfile, secondary; delim='\t')
 
 #Output school locations and types
 #locations[findall(x->x == "Primary",locations.School_type),:]
-outfile   = cfg["output_datadir"] * "schools_VIC_precise.tsv"
-CSV.write(outfile, secondary; delim='\t')
+
+outfile   = cfg["output_datadir"] * "schools_VIC_profile.tsv"
+CSV.write(outfile, profile; delim='\t')

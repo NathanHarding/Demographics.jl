@@ -95,7 +95,7 @@ end
 infile = cfg["input_datadir"] * "asgs_codes.tsv"
 codes  = DataFrame(CSV.File(infile; delim='\t'))
 if cfg["subpop_module"]
-	infile = cfg["input_datadir"] * "SA2_subset.csv"
+	infile = cfg["input_datadir"] * "SA2_subset.tsv"
 	target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
 	codes = codes[findall(in(target_SA2_list.SA2_code),codes.SA2_MAINCODE_2016),:]
 end

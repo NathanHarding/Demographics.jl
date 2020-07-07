@@ -38,11 +38,11 @@ infile = cfg["input_datadir"] * "asgs_codes.tsv"
 codes  = DataFrame(CSV.File(infile; delim='\t'))
 infile = cfg["input_datadir"] * "population_by_age_by_sa2.tsv"
 data   = DataFrame(CSV.File(infile; delim='\t'))
-data   = join(codes, data, on=:SA2_NAME_2016, kind=:left)
+data   = leftjoin(codes, data, on=:SA2_NAME_2016)
 data   = data[data.STATE_NAME_2016 .== "Victoria", :]
 # Format and write to disk
 if cfg["subpop_module"]
-    infile = cfg["input_datadir"] * "SA2_subset.csv"
+    infile = cfg["input_datadir"] * "SA2_subset.tsv"
     target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
     data = data[findall(in(target_SA2_list.SA2_code),data.SA2_MAINCODE_2016),:]
 else
