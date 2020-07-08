@@ -27,16 +27,16 @@ getcontact(i) = contactids[i]
 
 function populate_contacts!(people::Vector{Person{A, S}}, params, indata, dt::Date) where {A, S}
     age2first = persons.construct_age2firstindex!(people, dt)  # people[age2first[i]] is the first agent with age i
-    #populate_households!(people, dt, age2first, indata["household_distribution"])
+    populate_households!(people, dt, age2first, indata["household_distribution"])
     @info "$(now()) Populating schools"
     populate_SA2_schools!(people, dt, indata["SA2_list"], indata["primaryschool_distribution"], indata["secondaryschool_distribution"],
                               Int(params[:ncontacts_s2s]), Int(params[:ncontacts_t2t]), Int(params[:ncontacts_t2s]))
     @info "$(now()) Populating work places"
-    #populate_workplaces!(people, dt, indata["workplace_distribution"])
+    populate_workplaces!(people, dt, indata["workplace_distribution"])
     @info "$(now()) Populating communities"
-    #populate_community_contacts!(people)
+    populate_community_contacts!(people)
     @info "$(now()) Populating social networks"
-    #populate_social_contacts!(people)
+    populate_social_contacts!(people)
 end
 
 function get_contactlist(person::Person{A, S}, network::Symbol, params) where {A, S}
@@ -125,16 +125,6 @@ function get_regular_graph_contactids!(community::Vector{Int}, i_person::Int, nc
         contactids[j] = community[i]
     end
     j
-end
-
-function populate_SA2_schools!(people,dt, SA2_list, primaryschool_distribution::DataFrame,
-                secondaryschool_distribution::DataFrame, ncontacts_s2s, ncontacts_t2t, ncontacts_t2s)
-    for SA2 in SA2_list.SA2_code
-        age2first = persons.construct_age2index_by_SA2(people,dt,SA2,true)
-        age2last = persons.construct_age2index_by_SA2(people,dt,SA2,false)
-        populate_school_contacts!(people, dt, age2first, age2last, primaryschool_distribution::DataFrame, 
-                secondaryschool_distribution::DataFrame, ncontacts_s2s, ncontacts_t2t, ncontacts_t2s)
-    end
 end
 
 end

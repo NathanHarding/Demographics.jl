@@ -7,7 +7,7 @@ Adults aged 18 to 23 inclusive are assumed to attend post-secondary education.
 """
 module schools
 
-export populate_school_contacts!
+export populate_school_contacts!, populate_SA2_schools!
 
 using DataFrames
 using Dates
@@ -193,6 +193,16 @@ function set_teacher_to_student_contacts!(people, school::School, ncontacts_t2s)
             append_contact!(teacherid, studentid, teacher_contactlist)
             append_contact!(studentid, teacherid, student_contactlist)
         end
+    end
+end
+
+function populate_SA2_schools!(people,dt, SA2_list, primaryschool_distribution::DataFrame,
+                secondaryschool_distribution::DataFrame, ncontacts_s2s, ncontacts_t2t, ncontacts_t2s)
+    for SA2 in SA2_list.SA2_code
+        age2first = persons.construct_age2index_by_SA2(people,dt,SA2,true)
+        age2last = persons.construct_age2index_by_SA2(people,dt,SA2,false)
+        populate_school_contacts!(people, dt, age2first, age2last, primaryschool_distribution::DataFrame, 
+                secondaryschool_distribution::DataFrame, ncontacts_s2s, ncontacts_t2t, ncontacts_t2s)
     end
 end
 
