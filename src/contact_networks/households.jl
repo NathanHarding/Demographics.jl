@@ -1,6 +1,6 @@
 module households
 
-export populate_households!, populate_households_by_SA2!
+export populate_households_by_SA2!
 
 using DataFrames
 using Dates
@@ -45,11 +45,11 @@ function push_child!(hh::Household, id)
     true  # Success
 end
 
-function populate_households!(people, dt::Date, age2first, age2last, household_distribution::DataFrame)
+function populate_households!(people, dt::Date, SA2, age2first, age2last, household_distribution::DataFrame)
     #@info "$(now()) Populating households with children"
     populate_households_with_children!(people, dt, age2first, age2last, household_distribution)
     #@info "$(now()) Populating households without children"
-    populate_households_without_children!(people, household_distribution)
+    populate_households_without_children!(people, SA2, household_distribution)
 end
 
 ################################################################################
@@ -156,9 +156,9 @@ while n_unplaced_adults > 0
         - No constraints at the moment
     set household contacts
 """
-function populate_households_without_children!(people, household_distribution::DataFrame)
+function populate_households_without_children!(people, SA2, household_distribution::DataFrame)
     nonfamily_household_distribution = construct_nonchild_household_distribution(household_distribution)
-    unplaced_adults = Set([person.id for person in people if person.i_household == 0])
+    unplaced_adults = Set([person.id for person in people if person.i_household == 0 && person.address == SA2])
     imax = length(unplaced_adults)
     for i = 1:imax  # Cap the number of iterations by placing at least 1 child per iteration
         # Init household
@@ -204,7 +204,7 @@ function populate_households_by_SA2!(people, dt::Date, SA2_list,age2first, house
         @info "$(now()) Populating households in " SA2
         age2first = persons.construct_age2index_by_SA2(people,dt,SA2,true)
         age2last = persons.construct_age2index_by_SA2(people,dt,SA2,false)
-        populate_households!(people, dt, age2first, age2last, household_distribution)
+        populate_households!(people, dt, SA2, age2first, age2last, household_distribution)
     end
 
 end
