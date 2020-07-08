@@ -1,6 +1,6 @@
 module households
 
-export populate_households!
+export populate_households!, populate_households_by_SA2!
 
 using DataFrames
 using Dates
@@ -45,10 +45,10 @@ function push_child!(hh::Household, id)
     true  # Success
 end
 
-function populate_households!(people, dt::Date, age2first, household_distribution::DataFrame)
-    @info "$(now()) Populating households with children"
-    populate_households_with_children!(people, dt, age2first, household_distribution)
-    @info "$(now()) Populating households without children"
+function populate_households!(people, dt::Date, age2first, age2last, household_distribution::DataFrame)
+    #@info "$(now()) Populating households with children"
+    populate_households_with_children!(people, dt, age2first, age2last, household_distribution)
+    #@info "$(now()) Populating households without children"
     populate_households_without_children!(people, household_distribution)
 end
 
@@ -68,10 +68,16 @@ while n_unplaced_children > 0
        - adults at least 20 years older than oldest child
     set household contacts
 """
-function populate_households_with_children!(people, dt, age2first, household_distribution)
+function populate_households_with_children!(people, dt, age2first, age2last, household_distribution)
     family_household_distribution = construct_child_household_distribution(household_distribution)
-    unplaced_children = Set(1:(age2first[18] - 1))
-    unplaced_parents  = Set((age2first[20]):(age2first[55] - 1))  # Parents of children under 18 are adults aged between 20 and 54
+    unplaced_children = Set{Int64}()
+    unplaced_parents  = Set{Int64}() 
+    for i = 0:18
+        union!(unplaced_children,Set(age2first[i]:age2last[i]))
+    end
+    for i = 20:54
+        union!(unplaced_parents, Set(age2first[i]:age2last[i]))  # Parents of children under 18 are adults aged between 20 and 54
+    end
     imax = length(unplaced_children)
     for i = 1:imax  # Cap the number of iterations by placing at least 1 child per iteration
         # Init household
@@ -86,7 +92,7 @@ function populate_households_with_children!(people, dt, age2first, household_dis
         age_youngest_child = 1000
         age_oldest_child   = -1
         for j = 1:nc
-            childid = sample_person(unplaced_children, min_age, max_age, age2first)
+            childid = sample_person_SA2(unplaced_children, min_age, max_age, age2first,age2last)
             pop!(unplaced_children, childid)
             push_child!(hh, childid)
             child = people[childid]
@@ -102,7 +108,7 @@ function populate_households_with_children!(people, dt, age2first, household_dis
         min_parent_age = age_oldest_child + 20
         max_parent_age = age_oldest_child + 45
         for j = 1:np
-            parentid = sample_person(unplaced_parents, min_parent_age, max_parent_age, age2first)
+            parentid = sample_person_SA2(unplaced_parents, min_parent_age, max_parent_age, age2first,age2last)
             pop!(unplaced_parents, parentid)
             push_adult!(hh, parentid)
             people[parentid].i_household = idx
@@ -191,6 +197,16 @@ function draw_household_without_children(unplaced_adults, nonfamily_household_di
     nadults = nonfamily_household_distribution[i, :nadults]
     nadults = nadults > n_unplaced_adults  ? n_unplaced_adults : nadults
     Household(nadults, 0)
+end
+
+function populate_households_by_SA2!(people, dt::Date, SA2_list,age2first, household_distribution::DataFrame)
+    for SA2 in SA2_list.SA2_code
+        @info "$(now()) Populating households in " SA2
+        age2first = persons.construct_age2index_by_SA2(people,dt,SA2,true)
+        age2last = persons.construct_age2index_by_SA2(people,dt,SA2,false)
+        populate_households!(people, dt, age2first, age2last, household_distribution)
+    end
+
 end
 
 ################################################################################

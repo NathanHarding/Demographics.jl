@@ -27,7 +27,7 @@ getcontact(i) = contactids[i]
 
 function populate_contacts!(people::Vector{Person{A, S}}, params, indata, dt::Date) where {A, S}
     age2first = persons.construct_age2firstindex!(people, dt)  # people[age2first[i]] is the first agent with age i
-    populate_households!(people, dt, age2first, indata["household_distribution"])
+    populate_households_by_SA2!(people, dt, indata["SA2_list"], age2first, indata["household_distribution"])
     @info "$(now()) Populating schools"
     populate_SA2_schools!(people, dt, indata["SA2_list"], indata["primaryschool_distribution"], indata["secondaryschool_distribution"],
                               Int(params[:ncontacts_s2s]), Int(params[:ncontacts_t2t]), Int(params[:ncontacts_t2s]))

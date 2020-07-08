@@ -71,9 +71,12 @@ function sample_person(unplaced_people::Set{Int}, min_age, max_age, age2first)
     rand(unplaced_people)
 end
 function sample_person_SA2(unplaced_people::Set{Int}, min_age, max_age, age2first,age2last)
-    i1 = age2first[min_age]
-    i2 = age2last[max_age]
-    s  = i1:i2      # Indices of people in the age range
+    s = []
+    for age = min_age:max_age
+        i1 = age2first[age]
+        i2 = age2last[age]
+        union(s,i1:i2)    # Indices of people in the age range added to list s
+    end  
     n  = length(s)  # Maximum number of random draws
     for i = 1:n
         id = rand(s)  # id is a random person in the age range
