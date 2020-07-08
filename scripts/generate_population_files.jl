@@ -4,11 +4,10 @@ Pkg.activate(".")
 using YAML
 #functions
 function generate_input_files(subpop_module,home_dir)
-    if subpop_module == true
-        @info "creating subpopulation list file"
-        include("generate_subpopulation.jl")
-        cd(home_dir)
-    end
+
+    @info "creating subpopulation list file"
+    include("generate_subpopulation.jl")
+    cd(home_dir)
 
     @info "creating subpopulation age file"
     include("population_by_age.jl")

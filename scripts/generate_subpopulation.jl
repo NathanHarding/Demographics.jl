@@ -44,7 +44,11 @@ subset_regions = DataFrame(CSV.File(infile;delim='\t'))
 infile = cfg["input_datadir"] * "ASGS_codes.tsv"
 all_regions = DataFrame(CSV.File(infile;delim='\t'))
 
-sa2_subset = loop(subset_regions,all_regions)
+if cfg["subpop_module"]
+	sa2_subset = loop(subset_regions,all_regions)
+else
+	sa2_subset = all_regions.SA2_MAINCODE_2016[findall(x->x == "Victoria",all_regions.STATE_NAME_2016)] # only take SA2 codes from VIC region
+end
 sa2_subset = DataFrame(SA2_code = sa2_subset)
 
 ofile =  "SA2_subset.tsv"
