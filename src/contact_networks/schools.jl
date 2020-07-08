@@ -99,13 +99,13 @@ function push_student!(school::School, id::Int, age::Int)
     true  # Success
 end
 
-function populate_school_contacts!(people, dt::Date, age2first, primaryschool_distribution::DataFrame, secondaryschool_distribution::DataFrame,
+function populate_school_contacts!(people, dt::Date, age2first, age2last, primaryschool_distribution::DataFrame, secondaryschool_distribution::DataFrame,
                                    ncontacts_s2s, ncontacts_t2t, ncontacts_t2s)
     d_nstudents_per_level_primary   = Categorical(primaryschool_distribution.proportion)
     d_nstudents_per_level_secondary = Categorical(secondaryschool_distribution.proportion)
     min_teacher_age   = 24
     max_teacher_age   = 65
-    unplaced_students = Dict(age => Set(age2first[age]:(age2first[age+1] - 1)) for age = 0:23)
+    unplaced_students = Dict(age => Set(age2first[age]:(age2last[age])) for age = 0:23)
     unplaced_teachers = Set((age2first[min_teacher_age]):(age2first[max_teacher_age] - 1))
     imax              = sum([length(v) for (k, v) in unplaced_students])
     for i = 1:imax  # Cap the number of iterations by placing at least 1 child per iteration
@@ -129,7 +129,7 @@ function populate_school_contacts!(people, dt::Date, age2first, primaryschool_di
             n_available = school.max_nstudents_per_level - length(students)  # Number of available positions
             for j = 1:n_available
                 isempty(unplaced_students[age]) && break
-                studentid = sample_person(unplaced_students[age], age, age, age2first)
+                studentid = sample_person_SA2(unplaced_students[age], age, age, age2first,age2last)
                 pop!(unplaced_students[age], studentid)
                 push_student!(school, studentid, age)
             end

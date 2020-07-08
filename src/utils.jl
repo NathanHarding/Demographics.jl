@@ -1,6 +1,6 @@
 module utils
 
-export import_data, sample_person, append_contact!, assign_contacts_regulargraph!
+export import_data, sample_person, sample_person_SA2, append_contact!, assign_contacts_regulargraph!
 
 using CSV
 using DataFrames
@@ -62,6 +62,17 @@ If one doesn't exist return a random id from unplaced_people.
 function sample_person(unplaced_people::Set{Int}, min_age, max_age, age2first)
     i1 = age2first[min_age]
     i2 = age2first[max_age + 1] - 1
+    s  = i1:i2      # Indices of people in the age range
+    n  = length(s)  # Maximum number of random draws
+    for i = 1:n
+        id = rand(s)  # id is a random person in the age range
+        id in unplaced_people && return id  # id is also an unplaced person
+    end
+    rand(unplaced_people)
+end
+function sample_person_SA2(unplaced_people::Set{Int}, min_age, max_age, age2first,age2last)
+    i1 = age2first[min_age]
+    i2 = age2last[max_age]
     s  = i1:i2      # Indices of people in the age range
     n  = length(s)  # Maximum number of random draws
     for i = 1:n
