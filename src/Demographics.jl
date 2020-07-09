@@ -36,12 +36,12 @@ function construct_population(cfg::Config)
     npeople = sa2_pops.cumsum_population[end]
     people  = Vector{Person{Int, Nothing}}(undef, npeople)
     SA2_id = 1
-    d_age   = Categorical(agedist[Symbol(sa2_pops.SA2_code[SA2_id])])
+    d_age   = Categorical(agedist[!,Symbol(sa2_pops.SA2_code[SA2_id])])
     for id = 1:npeople
         while (id - sa2_pops.cumsum_population[SA2_id] > 0)
             SA2_id +=1
-            if sum(agedist[Symbol(sa2_pops.SA2_code[SA2_id])])!=0
-                d_age   = Categorical(agedist[Symbol(sa2_pops.SA2_code[SA2_id])])
+            if sum(agedist[!,Symbol(sa2_pops.SA2_code[SA2_id])])!=0
+                d_age   = Categorical(agedist[!,Symbol(sa2_pops.SA2_code[SA2_id])])
             end
         end
         age        = agedist[rand(d_age), :age]

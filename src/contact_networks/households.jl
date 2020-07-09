@@ -199,9 +199,8 @@ function draw_household_without_children(unplaced_adults, nonfamily_household_di
     Household(nadults, 0)
 end
 
-function populate_households_by_SA2!(people, dt::Date, SA2_list,age2first, household_distribution::DataFrame)
+function populate_households_by_SA2!(people, dt::Date, SA2_list, household_distribution::DataFrame)
     for SA2 in SA2_list.SA2_code
-        @info "$(now()) Populating households in " SA2
         age2first = persons.construct_age2index_by_SA2(people,dt,SA2,true)
         age2last = persons.construct_age2index_by_SA2(people,dt,SA2,false)
         populate_households!(people, dt, SA2, age2first, age2last, household_distribution)

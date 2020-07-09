@@ -1,20 +1,31 @@
 module community_networks
 
-export populate_community_contacts!
+export populate_community_contacts!, populate_community_contacts_by_SA2!
 
 using Random
 
-const communitycontacts = Int[]   # Contains person IDs. Community contacts can be derived for each person.
+# const communitycontacts = Int[]   # Contains person IDs. Community contacts can be derived for each person.
+const communitycontacts = Dict{Int,Array{Int,1}}()   # Each key is an SA2 code where the value pair contains a vector of person IDs. Community contacts can be derived for each person 
 
-function populate_community_contacts!(people)
-    npeople = length(people)
-    for i = 1:npeople
-        push!(communitycontacts, people[i].id)
+function populate_community_contacts!(people,SA2)
+	community_contacts = Int[]
+	idxs = findall(x->x.address == SA2,people)      #Exploits sorted structure of people. people[i].id = i
+    npeople = length(idxs)
+    for idx in idxs
+        push!(community_contacts, idx)
     end
-    shuffle!(communitycontacts)
+    shuffle!(community_contacts)
     for i = 1:npeople
-        id = communitycontacts[i]
+        id = community_contacts[i]
         people[id].i_community = i
+    end
+    community_contacts
+end
+
+
+function populate_community_contacts_by_SA2!(people,SA2_list)
+    for SA2 in SA2_list.SA2_code
+        communitycontacts[SA2] = populate_community_contacts!(people, SA2)
     end
 end
 
