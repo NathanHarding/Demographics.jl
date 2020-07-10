@@ -31,22 +31,23 @@ function construct_population(cfg::Config)
     indata = import_data(cfg.input_datadir, cfg.input_datafiles)
 
     @info "$(now()) Initialising population"
-    agedist = indata["age_distribution"]
+    agedist  = indata["age_distribution"]  # Each column is an age distribution for an SA2
     sa2_pops = indata["cumsum_population"]
-    npeople = sa2_pops.cumsum_population[end]
-    people  = Vector{Person{Int, Nothing}}(undef, npeople)
-    SA2_id = 1
-    d_age   = Categorical(agedist[!,Symbol(sa2_pops.SA2_code[SA2_id])])
+    npeople  = sa2_pops.cumsum_population[end]
+    people   = Vector{Person{Int, Nothing}}(undef, npeople)
+    SA2_id   = 1
+    d_age    = Categorical(agedist[!, Symbol(sa2_pops.SA2_code[SA2_id])])  # Age distribution for the 1st SA2
     for id = 1:npeople
-        while (id - sa2_pops.cumsum_population[SA2_id] > 0)
-            SA2_id +=1
-            if sum(agedist[!,Symbol(sa2_pops.SA2_code[SA2_id])])!=0
-                d_age   = Categorical(agedist[!,Symbol(sa2_pops.SA2_code[SA2_id])])
+        while (id - sa2_pops.cumsum_population[SA2_id] > 0)  # Current SA2 is full. Move to the next SA2.
+            SA2_id += 1
+            if sum(agedist[!, Symbol(sa2_pops.SA2_code[SA2_id])]) != 0
+                d_age = Categorical(agedist[!, Symbol(sa2_pops.SA2_code[SA2_id])])
             end
         end
         age        = agedist[rand(d_age), :age]
         birthdate  = today() - Year(age)
-        people[id] = Person{Int64, Nothing}(id, birthdate, 'o', sa2_pops.SA2_code[SA2_id], nothing)
+        sa2_code   = sa2_pops.SA2_code[SA2_id]
+        people[id] = Person{Int64, Nothing}(id, birthdate, 'o', sa2_code, nothing)
     end
 
     @info "$(now()) Populating contacts"

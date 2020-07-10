@@ -1,9 +1,9 @@
-input_datadir:  "H:\\Documents\\dev\\Demographics.jl\\test\\data\\input"   # When testing this dir is Demographics.jl/test/data/input
-output_datadir: "H:\\Documents\\dev\\Demographics.jl\\test\\data\\output"  # When testing this dir is Demographics.jl/test/data/output
+input_datadir:  "data\\input"   # When testing this dir is Demographics.jl/test/data/input
+output_datadir: "data\\output"  # When testing this dir is Demographics.jl/test/data/output
 input_datafiles:
-    age_distribution:             "population_distribution_by_SA2.tsv"
+    age_distribution:             "population_by_age_by_SA2.tsv"
     cumsum_population:            "population_by_SA2.tsv"
-    workplace_distribution:       "workplace_by_size.tsv"
+    workplace_distribution:       "workplace_by_size_VIC.tsv"
     primaryschool_distribution:   "avg_yearlevel_size_distribution_primary.tsv"
     secondaryschool_distribution: "avg_yearlevel_size_distribution_secondary.tsv"
     household_distribution:       "households.tsv"
