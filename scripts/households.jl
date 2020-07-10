@@ -3,20 +3,11 @@
   The intermediate data is copied from the raw Excel spreadsheet sourced from the ABS.
 =#
 
-using YAML
-cfg = YAML.load(open("scripts\\config.yml"))
-cd(cfg["output_datadir"])
-using Pkg
-Pkg.activate(".")
-
-using CSV
-using DataFrames
-
 ################################################################################
 # Functions
 
 function construct_household_counts(hh_size::DataFrame, hh_composition::DataFrame)
-    hholds = join(hh_size, hh_composition, on=:SA2_MAINCODE_2016, kind=:left)
+    hholds = leftjoin(hh_size, hh_composition, on=:SA2_MAINCODE_2016)
     dropmissing!(hholds)
     move_couples!(hholds)
     construct_result(hholds)
@@ -64,7 +55,7 @@ function construct_result(hholds)
         push!(result, (SA2_MAINCODE_2016=sa2code, nadults=6, nchildren=0, nhouseholds=row.Num_Psns_UR_6mo_NonFamHhold))
     end
     result = result[result.nhouseholds .> 0, :]
-    sort!(result, (:SA2_MAINCODE_2016, :nadults, :nchildren))
+    sort!(result, [:SA2_MAINCODE_2016, :nadults, :nchildren])
 end
 
 "Determine the number of 1-parent families with 3+ residents, and allocate them to families with 3+ residents."
@@ -92,20 +83,21 @@ end
 # Script
 
 # Get input data
-infile = cfg["input_datadir"] * "asgs_codes.tsv"
+infile = joinpath(cfg["input_datadir"], "asgs_codes.tsv")
 codes  = DataFrame(CSV.File(infile; delim='\t'))
 if cfg["subpop_module"]
-	infile = cfg["input_datadir"] * "SA2_subset.tsv"
+	infile = joinpath(cfg["input_datadir"], "SA2_subset.tsv")
 	target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
 	codes = codes[findall(in(target_SA2_list.SA2_code),codes.SA2_MAINCODE_2016),:]
 end
-infile = cfg["input_datadir"] * "family_household_composition.tsv"
+
+infile = joinpath(cfg["input_datadir"], "family_household_composition.tsv")
 hh_composition = DataFrame(CSV.File(infile; delim='\t'))
-hh_composition = join(hh_composition, codes, on=:SA2_NAME_2016, kind=:left)
-infile  = cfg["input_datadir"] * "household_size.tsv"
+hh_composition = leftjoin(hh_composition, codes, on=:SA2_NAME_2016)
+infile  = joinpath(cfg["input_datadir"], "household_size.tsv")
 hh_size = DataFrame(CSV.File(infile; delim='\t'))
 
 # Construct result
 households = construct_household_counts(hh_size, hh_composition)
-outfile = cfg["output_datadir"] * "households.tsv"
+outfile    = joinpath(cfg["output_datadir"], "households.tsv")
 CSV.write(outfile, households; delim='\t')

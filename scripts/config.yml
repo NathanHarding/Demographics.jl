@@ -1,4 +1,10 @@
-input_datadir:  "H:\\Documents\\data\\"   # When testing this dir is H:\\Documents\\data
-output_datadir: "H:\\Documents\\dev\\Demographics.jl\\test\\data\\input\\"   # When testing this dir is H:\\Documents\\data\\
-home_dir: "H:\\Documents\\dev\\Demographics.jl"
-subpop_module: true #Boolean for including subpopulation generation
+## Nathan
+#input_datadir:  "H:\\Documents\\data\\"
+#output_datadir: "H:\\Documents\\dev\\Demographics.jl\\test\\data\\input\\"
+#subpop_module: true #Boolean for including subpopulation generation
+
+## Jock
+input_datadir:  "C:\\projects\\data\\dhhs\\demographics\\input"
+output_datadir: "C:\\projects\\data\\dhhs\\demographics\\output"
+subpop_module: true  # Boolean for including subpopulation generation
+regions_file: "SA2s_in_lockdown_july2020.tsv"

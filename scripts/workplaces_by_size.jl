@@ -3,16 +3,6 @@
   The intermediate data is copied from the raw Excel spreadsheet sourced from the ABS.
 =#
 
-
-using YAML
-cfg = YAML.load(open("scripts\\config.yml"))
-cd(cfg["output_datadir"])
-using Pkg
-Pkg.activate(".")
-
-using CSV
-using DataFrames
-
 ################################################################################
 # Functions
 
@@ -55,15 +45,14 @@ end
 # Script
 
 # Get data
-infile = cfg["input_datadir"] * "workplace_size_by_industry_by_SA2.tsv"
+infile = joinpath(cfg["input_datadir"], "workplace_size_by_industry_by_SA2.tsv")
 data   = DataFrame(CSV.File(infile; delim='\t',types = Dict(5=>Int64,6=>Int64,7=>Int64,8=>Int64,9=>Int64)))
 
 if cfg["subpop_module"]
-    infile = cfg["input_datadir"] * "SA2_subset.tsv"
+    infile = joinpath(cfg["input_datadir"], "SA2_subset.tsv")
     target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
     data = data[findall(in(target_SA2_list.SA2_code),data.SA2_code),:]
-end
-if !cfg["subpop_module"]
+else
     data.SA2_code = [ismissing(x) ? missing : string(x) for x in data.SA2_code]
     keep = [!ismissing(x) && x[1] == '2' for x in data.SA2_code]
     data = data[keep, :]
@@ -72,12 +61,11 @@ end
 
 # Take data from selected regions
 
-
 # Count groups
 colnames  = [:nemployees_0, :nemployees_1to4, :nemployees_5to19, :nemployees_20to199, :nemployees_200plus]
 grp2count = count_employees(data, colnames)
 
 # Construct result and write to disk
 data    = counts_to_table(grp2count)
-outfile = cfg["output_datadir"] * "workplace_by_size_VIC.tsv"
+outfile = joinpath(cfg["output_datadir"], "workplace_by_size_VIC.tsv")
 CSV.write(outfile, data; delim='\t')
