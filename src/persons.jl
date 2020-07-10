@@ -78,9 +78,21 @@ function construct_age2firstindex!(people::Vector{Person{A, S}}, dt) where {A, S
     age2first
 end
 
-function construct_age2index_by_SA2(people::Vector{Person{A,S}},dt,SA2,first::Bool) where {A,S}
-    age2idx = Dict{Int, Int}()  # age => first or last index containing age for the given SA2
+function construct_age2index_by_SA2(people::Vector{Person{A,S}},dt,SA2_list,first::Bool) where {A,S}
+    age2idx = Dict{Int,Dict}()  # SA2,age => first or last index containing age for the given SA2
+    def_val = -2 # Set deault to unusable index
+    if first
+        def_val = -1 # Set default such that Set(age2first[i]:age2last[i]) will return empty if no one exists
+    end
+    for SA2 in SA2_list
+        age2idx[SA2] = Dict()
+        for i =0:116
+            age2idx[SA2][i] = def_val
+        end
+    end
+
     current_age = -1
+    current_SA2 = 0
     for i = 1:length(people)
         if first == true
             idx = i
@@ -89,9 +101,12 @@ function construct_age2index_by_SA2(people::Vector{Person{A,S}},dt,SA2,first::Bo
         end
         person    = people[idx]
         age_years = age(person, dt, :year)
-        if age_years != current_age && person.address == SA2
-            current_age = age_years
-            age2idx[current_age] = idx
+        if age_years != current_age || person.address != current_SA2 #account for sometimes missing SA2/age
+            age2idx[person.address][age_years] = idx
+            if age_years!=current_age
+                current_age = age_years
+            end
+            current_SA2 = person.address
         end
     end
     age2idx

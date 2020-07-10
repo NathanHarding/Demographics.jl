@@ -74,9 +74,11 @@ function populate_households_with_children!(people, dt, age2first, age2last, hou
     unplaced_parents  = Set{Int64}() 
     for i = 0:18
         union!(unplaced_children,Set(age2first[i]:age2last[i]))
+
     end
     for i = 20:54
         union!(unplaced_parents, Set(age2first[i]:age2last[i]))  # Parents of children under 18 are adults aged between 20 and 54
+
     end
     imax = length(unplaced_children)
     for i = 1:imax  # Cap the number of iterations by placing at least 1 child per iteration

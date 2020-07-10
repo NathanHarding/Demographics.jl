@@ -28,15 +28,15 @@ getcontact(i) = contactids[i]
 function populate_contacts!(people::Vector{Person{A, S}}, params, indata, dt::Date) where {A, S}
     age2first_teacher = persons.construct_age2firstindex!(people, dt)  # teachers are working population so do not need per SA2 lists for assignment
     SA2_list = indata["SA2_list"]
+    @info "$(now()) Constructing dictionary"
+    age2first = persons.construct_age2index_by_SA2(people,dt,SA2_list.SA2_code,true) # populate age2first indices from scratch
+    age2last = persons.construct_age2index_by_SA2(people,dt,SA2_list.SA2_code,false)
     for SA2 in SA2_list.SA2_code
-        @info "$(now()) Populating $SA2 workplaces, schools,communities"
-        age2first = persons.construct_age2index_by_SA2(people,dt,SA2,true) # populate age2first indices from scratch
-        age2last = persons.construct_age2index_by_SA2(people,dt,SA2,false)
-
+        @info "$(now()) Populating $SA2 workplaces, schools, communities"
         #@info "$(now()) Populating households"
-        populate_households!(people, dt, SA2, age2first, age2last, indata["household_distribution"])
+        populate_households!(people, dt, SA2, age2first[SA2], age2last[SA2], indata["household_distribution"])
         #@info "$(now()) Populating schools"
-        populate_school_contacts!(people, dt, age2first, age2last, age2first_teacher, indata["primaryschool_distribution"], indata["secondaryschool_distribution"],
+        populate_school_contacts!(people, dt, age2first[SA2], age2last[SA2], age2first_teacher, indata["primaryschool_distribution"], indata["secondaryschool_distribution"],
                                Int(params[:ncontacts_s2s]), Int(params[:ncontacts_t2t]), Int(params[:ncontacts_t2s]))
         #@info "$(now()) Populating communities"
         populate_community_contacts_by_SA2!(people,SA2)
