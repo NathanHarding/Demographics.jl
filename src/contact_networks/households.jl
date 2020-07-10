@@ -1,6 +1,6 @@
 module households
 
-export populate_households_by_SA2!
+export populate_households!,populate_households_by_SA2!
 
 using DataFrames
 using Dates

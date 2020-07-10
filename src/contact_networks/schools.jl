@@ -7,7 +7,7 @@ Adults aged 18 to 23 inclusive are assumed to attend post-secondary education.
 """
 module schools
 
-export populate_SA2_schools!
+export populate_school_contacts!, populate_SA2_schools!
 
 using DataFrames
 using Dates
@@ -99,14 +99,14 @@ function push_student!(school::School, id::Int, age::Int)
     true  # Success
 end
 
-function populate_school_contacts!(people, dt::Date, age2first, age2last, primaryschool_distribution::DataFrame, secondaryschool_distribution::DataFrame,
+function populate_school_contacts!(people, dt::Date, age2first, age2last, age2first_teacher, primaryschool_distribution::DataFrame, secondaryschool_distribution::DataFrame,
                                    ncontacts_s2s, ncontacts_t2t, ncontacts_t2s)
     d_nstudents_per_level_primary   = Categorical(primaryschool_distribution.proportion)
     d_nstudents_per_level_secondary = Categorical(secondaryschool_distribution.proportion)
     min_teacher_age   = 24
     max_teacher_age   = 65
     unplaced_students = Dict(age => Set(age2first[age]:(age2last[age])) for age = 0:23)
-    unplaced_teachers = Set((age2first[min_teacher_age]):(age2first[max_teacher_age] - 1))
+    unplaced_teachers = Set((age2first_teacher[min_teacher_age]):(age2first_teacher[max_teacher_age] - 1))
     imax              = sum([length(v) for (k, v) in unplaced_students])
     for i = 1:imax  # Cap the number of iterations by placing at least 1 child per iteration
         # Init school
@@ -139,7 +139,7 @@ function populate_school_contacts!(people, dt::Date, age2first, age2last, primar
         n_available = school.max_nteachers - length(school.teachers)  # Number of available positions
         for j = 1:n_available
             isempty(unplaced_teachers) && break
-            teacherid = sample_person(unplaced_teachers, min_teacher_age, max_teacher_age, age2first)
+            teacherid = sample_person(unplaced_teachers, min_teacher_age, max_teacher_age, age2first_teacher)
             pop!(unplaced_teachers, teacherid)
             push_teacher!(school, teacherid)
         end

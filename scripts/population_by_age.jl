@@ -15,6 +15,10 @@ using DataFrames
 # Functions
 
 function fill_age_data_frame(data::DataFrame,SA2_list::Vector)
+    for col in names(data[:,[1;13:128]])  #dirty fix before report - needs permanent solution
+        data[ismissing.(data[!,col]), col] = 0
+    end
+
     row_values = disallowmissing(Matrix(data[:,[1;13:128]]))
     result = DataFrame(age = Vector(0:115))
     i = 1
@@ -40,6 +44,7 @@ infile = cfg["input_datadir"] * "population_by_age_by_sa2.tsv"
 data   = DataFrame(CSV.File(infile; delim='\t'))
 data   = leftjoin(codes, data, on=:SA2_NAME_2016)
 data   = data[data.STATE_NAME_2016 .== "Victoria", :]
+
 # Format and write to disk
 if cfg["subpop_module"]
     infile = cfg["input_datadir"] * "SA2_subset.tsv"
@@ -55,5 +60,5 @@ outfile = cfg["output_datadir"] * "population_by_SA2.tsv"
 CSV.write(outfile, data_sp; delim='\t')
 
 result = fill_age_data_frame(data,target_SA2_list.SA2_code)
-outfile = cfg["output_datadir"] * "population_distribution_by_SA2.tsv"
+outfile = cfg["output_datadir"] * "population_by_age_by_SA2.tsv"
 CSV.write(outfile, result; delim='\t')

@@ -23,10 +23,8 @@ function populate_community_contacts!(people,SA2)
 end
 
 
-function populate_community_contacts_by_SA2!(people,SA2_list)
-    for SA2 in SA2_list.SA2_code
-        communitycontacts[SA2] = populate_community_contacts!(people, SA2)
-    end
+function populate_community_contacts_by_SA2!(people,SA2)
+    communitycontacts[SA2] = populate_community_contacts!(people, SA2)
 end
 
 end
