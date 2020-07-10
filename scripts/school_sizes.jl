@@ -3,15 +3,6 @@
   The intermediate data is copied from the raw Excel spreadsheet sourced from the ABS.
 =#
 
-using YAML
-cfg = YAML.load(open("scripts\\config.yml"))
-cd(cfg["output_datadir"])
-using Pkg
-Pkg.activate(".")
-
-using CSV
-using DataFrames
-
 ################################################################################
 # Functions
 
@@ -28,7 +19,7 @@ function longify(data::DataFrame)
             push!(result, (school_name=school_name, year_level=j, count=nstudents))
         end
     end
-    sort!(result, (:school_name, :year_level))
+    sort!(result, [:school_name, :year_level])
 end
 
 "Size bands of 10"
@@ -58,45 +49,45 @@ end
 
 ################################################################################
 # Script
-# 
 
 # Get data
 
 #ACARA specific data
-infile = cfg["input_datadir"] * "ACARA_school_locations.tsv"
+infile    = joinpath(cfg["input_datadir"], "ACARA_school_locations.tsv")
 locations = DataFrame(CSV.File(infile; delim='\t'))
-infile = cfg["input_datadir"] * "ACARA_school_profile.tsv"
-profile = DataFrame(CSV.File(infile; delim='\t'))
-locations = innerjoin(profile,locations,on="ACARA_SML_ID",makeunique=true)
+infile    = joinpath(cfg["input_datadir"], "ACARA_school_profile.tsv")
+profile   = DataFrame(CSV.File(infile; delim='\t'))
+locations = innerjoin(profile, locations, on="ACARA_SML_ID", makeunique=true)
 
 if cfg["subpop_module"]
-    infile = cfg["input_datadir"] * "SA2_subset.tsv"
+    infile = joinpath(cfg["input_datadir"], "SA2_subset.tsv")
     target_SA2_list = DataFrame(CSV.File(infile, delim='\t'))
-    locations = locations[findall(in(target_SA2_list.SA2_code),locations.SA2_code),:]
+    locations = locations[findall(in(target_SA2_list.SA2_code), locations.SA2_code),:]
 end
+
 #General data for year level splits
-infile = cfg["input_datadir"] * "year_level_sizes_by_school.tsv"
+infile = joinpath(cfg["input_datadir"], "year_level_sizes_by_school.tsv")
 data   = DataFrame(CSV.File(infile; delim='\t'))
-data = data[findall(in(locations.School_name),data.school_name),:]
+data   = data[findall(in(locations.School_name),data.school_name),:]
 
 # Convert to long form for Power BI. Columns: school_name, year_level, count
 data    = longify(data)
-outfile = cfg["output_datadir"] * "year_level_sizes_by_school_longform.tsv"
+outfile = joinpath(cfg["output_datadir"], "year_level_sizes_by_school_longform.tsv")
 CSV.write(outfile, data; delim='\t')
 
 # Construct result. Columns: avg_year_level_size_lb, avg_year_level_size_ub, count, proportion
 primary = data[data[!, :year_level] .<= 6, :]
 primary = avg_year_level_size(primary)
-outfile = cfg["output_datadir"] * "avg_yearlevel_size_distribution_primary.tsv"
+outfile = joinpath(cfg["output_datadir"], "avg_yearlevel_size_distribution_primary.tsv")
 CSV.write(outfile, primary; delim='\t')
 
 secondary = data[data[!, :year_level] .>= 7, :]
 secondary = avg_year_level_size(secondary)
-outfile   = cfg["output_datadir"] * "avg_yearlevel_size_distribution_secondary.tsv"
+outfile   = joinpath(cfg["output_datadir"], "avg_yearlevel_size_distribution_secondary.tsv")
 CSV.write(outfile, secondary; delim='\t')
 
 #Output school locations and types
 #locations[findall(x->x == "Primary",locations.School_type),:]
 
-outfile   = cfg["output_datadir"] * "schools_VIC_profile.tsv"
+outfile = joinpath(cfg["output_datadir"], "schools_VIC_profile.tsv")
 CSV.write(outfile, profile; delim='\t')

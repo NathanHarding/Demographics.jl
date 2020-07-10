@@ -1,31 +1,37 @@
+#=
+  Contents: Master script for formatting input data.
+
+  To run it:
+
+  $ cd /path/to/Demographics.jl
+  $ julia
+  julia> include("scripts\\generate_population_files.jl")
+=#
+
 using Pkg
 Pkg.activate(".")
 
+using CSV
+using DataFrames
+using Dates
+using Logging
 using YAML
-#functions
-function generate_input_files(subpop_module,home_dir)
 
-    @info "creating subpopulation list file"
-    include("generate_subpopulation.jl")
-    cd(home_dir)
+@info "$(now()) Configuring formatting job"
+cfg = YAML.load(open("scripts\\config.yml"))
 
-    @info "creating subpopulation age file"
-    include("population_by_age.jl")
-    cd(home_dir)
+@info "$(now()) Creating subpopulation list file"
+include("generate_subpopulation.jl")
 
-    @info "creating workplace file"
-    include("workplaces_by_size.jl")
-    cd(home_dir)
+@info "$(now()) Creating subpopulation age file"
+include("population_by_age.jl")
 
-    @info "creating household file"
-    include("households.jl")
-    cd(home_dir)
+@info "$(now()) Creating workplace file"
+include("workplaces_by_size.jl")
 
-    @info "creating school file"
-    include("school_sizes.jl")
-    cd(home_dir)
-end
+@info "$(now()) Creating household file"
+include("households.jl")
 
-#script
-cfg=YAML.load(open("scripts\\config.yml"))
-generate_input_files(cfg["subpop_module"],cfg["home_dir"])
+@info "$(now()) Creating school file"
+include("school_sizes.jl")
+nothing

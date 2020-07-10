@@ -1,29 +1,18 @@
 #=
-Contents: A script which takes a list of SA2/SA3/SA4 Regions and converts
-to a list of SA2 to be used by population generation scripts
+Contents: A script which takes a list of SA2/SA3/SA4 Regions and converts to a list of SA2 to be used by population generation scripts
 =#
 
-using YAML
-cfg = YAML.load(open("scripts\\config.yml"))
-cd(cfg["output_datadir"])
-
-using Pkg
-Pkg.activate(".")
-
-using CSV
-using DataFrames
-
 ##########################################################################################
-#Functions
-function loop(subset_regions::DataFrame,all_regions::DataFrame)
+# Functions
+function loop(subset_regions::DataFrame, all_regions::DataFrame)
 	sa2_subset = Vector{Int}()
 	for i=1:size(subset_regions,1)
-		add_SA2!(subset_regions.SA_code[i],sa2_subset,all_regions)
+		add_SA2!(subset_regions.SA_code[i], sa2_subset, all_regions)
 	end
 	sa2_subset
 end
 
-function add_SA2!(SA_code::Int,sa2_subset::Vector{Int},region_list::DataFrame)
+function add_SA2!(SA_code::Int, sa2_subset::Vector{Int}, region_list::DataFrame)
 	if 2e8 < SA_code < 3e8  #SA2
 		append!(sa2_subset,SA_code)
 	elseif 2e4 < SA_code < 3e4 #SA3
@@ -37,21 +26,21 @@ function add_SA2!(SA_code::Int,sa2_subset::Vector{Int},region_list::DataFrame)
 end
 
 ##########################################################################################
-#Script
+# Script
 
-infile = cfg["input_datadir"] * "subset_regions.tsv"
-subset_regions = DataFrame(CSV.File(infile;delim='\t'))
-infile = cfg["input_datadir"] * "ASGS_codes.tsv"
-all_regions = DataFrame(CSV.File(infile;delim='\t'))
+infile = joinpath(cfg["input_datadir"], cfg["regions_file"])
+dlm    = splitext(infile)[2][2:end]  # "csv" or "tsv"
+dlm    = dlm == "csv" ? ',' : '\t'
+subset_regions = DataFrame(CSV.File(infile; delim=dlm))
+all_regions    = DataFrame(CSV.File(joinpath(cfg["input_datadir"], "ASGS_codes.tsv"); delim='\t'))
 
 if cfg["subpop_module"]
-	sa2_subset = loop(subset_regions,all_regions)
+	sa2_subset = loop(subset_regions, all_regions)
 else
-	sa2_subset = all_regions.SA2_MAINCODE_2016[findall(x->x == "Victoria",all_regions.STATE_NAME_2016)] # only take SA2 codes from VIC region
+	sa2_subset = all_regions.SA2_MAINCODE_2016[findall(x->x == "Victoria", all_regions.STATE_NAME_2016)] # only take SA2 codes from VIC region
 end
 sa2_subset = DataFrame(SA2_code = sa2_subset)
 
-ofile =  "SA2_subset.tsv"
-CSV.write(cfg["input_datadir"] *ofile,unique(sa2_subset);delim='\t')
-CSV.write(cfg["output_datadir"] *ofile,unique(sa2_subset);delim='\t')
-
+outfile = "SA2_subset.tsv"
+CSV.write(joinpath(cfg["input_datadir"],  outfile), unique(sa2_subset); delim='\t')
+CSV.write(joinpath(cfg["output_datadir"], outfile), unique(sa2_subset); delim='\t')
