@@ -99,25 +99,35 @@ function push_student!(school::School, id::Int, age::Int)
     true  # Success
 end
 
-function populate_school_contacts!(people, dt::Date, age2first, age2last, age2first_teacher, primaryschool_distribution::DataFrame, secondaryschool_distribution::DataFrame,
-                                   ncontacts_s2s, ncontacts_t2t, ncontacts_t2s)
+function populate_school_contacts!(people, dt::Date, age2first,
+                                   primaryschool_distribution::DataFrame, secondaryschool_distribution::DataFrame,
+                                   ncontacts_s2s, ncontacts_t2t, ncontacts_t2s, id2index)
     d_nstudents_per_level_primary   = Categorical(primaryschool_distribution.proportion)
     d_nstudents_per_level_secondary = Categorical(secondaryschool_distribution.proportion)
+    npeople           = length(people)
     min_teacher_age   = 24
     max_teacher_age   = 65
-    unplaced_students = Dict(age => Set(age2first[age]:(age2last[age])) for age = 0:23)
-    unplaced_teachers = Set((age2first_teacher[min_teacher_age]):(age2first_teacher[max_teacher_age] - 1))
-    imax              = sum([length(v) for (k, v) in unplaced_students])
+    unplaced_teachers = Set(construct_agerange_indices(age2first, min_teacher_age, max_teacher_age, npeople))
+    unplaced_students = Dict{Int, Set{Int}}()
+    for age = 0:23
+        rg = construct_agerange_indices(age2first, age, age, npeople)
+        rg == 0:0 && continue
+        unplaced_students[age] = Set(rg)
+    end
+    imax = sum([length(v) for (k, v) in unplaced_students])
     for i = 1:imax  # Cap the number of iterations by placing at least 1 child per iteration
         # Init school
-        personid = nothing
+        i_people = nothing
         for age = 0:23
+            !haskey(unplaced_students, age) && continue
             isempty(unplaced_students[age]) && continue
-            personid = rand(unplaced_students[age])
+            r = rand(unplaced_students[age])
+            r == 0 && continue
+            i_people = r
             break
         end
-        isnothing(personid) && break  # STOPPING CRITERION: There are no unplaced students remaining
-        student    = people[personid]
+        isnothing(i_people) && break  # STOPPING CRITERION: There are no unplaced students remaining
+        student    = people[i_people]
         schooltype = determine_schooltype(age(student, dt, :year))
         school     = School(schooltype,
                             primaryschool_distribution, secondaryschool_distribution,
@@ -128,9 +138,10 @@ function populate_school_contacts!(people, dt::Date, age2first, age2last, age2fi
         for (age, students) in age2students
             n_available = school.max_nstudents_per_level - length(students)  # Number of available positions
             for j = 1:n_available
+                !haskey(unplaced_students, age) && break
                 isempty(unplaced_students[age]) && break
-                studentid = sample_person_SA2(unplaced_students[age], age, age, age2first,age2last)
-                pop!(unplaced_students[age], studentid)
+                index, studentid = sample_person(unplaced_students[age], people, age, age, age2first, npeople)
+                pop!(unplaced_students[age], index)
                 push_student!(school, studentid, age)
             end
         end
@@ -139,38 +150,36 @@ function populate_school_contacts!(people, dt::Date, age2first, age2last, age2fi
         n_available = school.max_nteachers - length(school.teachers)  # Number of available positions
         for j = 1:n_available
             isempty(unplaced_teachers) && break
-            teacherid = sample_person(unplaced_teachers, min_teacher_age, max_teacher_age, age2first_teacher)
-            pop!(unplaced_teachers, teacherid)
+            index, teacherid = sample_person(unplaced_teachers, people, min_teacher_age, max_teacher_age, age2first, npeople)
+            pop!(unplaced_teachers, index)
             push_teacher!(school, teacherid)
         end
 
         # Set contact lists
-        set_student_to_student_contacts!(people, school, ncontacts_s2s)
-        set_teacher_to_teacher_contacts!(people, school, ncontacts_t2t)
-        set_teacher_to_student_contacts!(people, school, ncontacts_t2s)
+        set_student_to_student_contacts!(people, school, ncontacts_s2s, id2index)
+        set_teacher_to_teacher_contacts!(people, school, ncontacts_t2t, id2index)
+        set_teacher_to_student_contacts!(people, school, ncontacts_t2s, id2index)
     end
 end
 
-function set_student_to_student_contacts!(people, school::School, ncontacts_s2s)
+function set_student_to_student_contacts!(people, school::School, ncontacts_s2s, id2index)
     age2students = school.age2students
     for (age, students) in age2students
         isempty(students) && continue
-        nstudents        = length(students)
-        vertexid2personid = Dict(i => students[i] for i = 1:nstudents)
-        assign_contacts_regulargraph!(people, :school, min(ncontacts_s2s, nstudents), vertexid2personid)
+        vertexid2personid = Dict(i => studentid for (i, studentid) in enumerate(students))
+        assign_contacts_regulargraph!(people, :school, min(ncontacts_s2s, length(students)), vertexid2personid, id2index)
     end
 end
 
-function set_teacher_to_teacher_contacts!(people, school::School, ncontacts_t2t)
+function set_teacher_to_teacher_contacts!(people, school::School, ncontacts_t2t, id2index)
     teachers = school.teachers
     isempty(teachers) && return
-    nteachers        = length(teachers)
-    vertexid2personid = Dict(i => teachers[i] for i = 1:nteachers)
-    assign_contacts_regulargraph!(people, :school, min(ncontacts_t2t, nteachers), vertexid2personid)
+    vertexid2personid = Dict(i => teacherid for (i, teacherid) in enumerate(teachers))
+    assign_contacts_regulargraph!(people, :school, min(ncontacts_t2t, length(teachers)), vertexid2personid, id2index)
 end
 
-function set_teacher_to_student_contacts!(people, school::School, ncontacts_t2s)
-    # Construct a vector of studentids
+function set_teacher_to_student_contacts!(people, school::School, ncontacts_t2s, id2index)
+    # Construct a vector of all studentids in the school
     studentids = Int[]
     for (age, students) in school.age2students
         for studentid in students
@@ -184,25 +193,17 @@ function set_teacher_to_student_contacts!(people, school::School, ncontacts_t2s)
     ncontacts_t2s = min(ncontacts_t2s, nstudents)  # Can't contact more students than are in the school
     idx = 0
     for teacherid in teachers
-        teacher_contactlist = people[teacherid].school
+        i_teacher = id2index[teacherid]
+        teacher_contactlist = people[i_teacher].school
         for i = 1:ncontacts_t2s
             idx += 1
             idx  = idx > nstudents ? 1 : idx
             studentid = studentids[idx]
-            student_contactlist = people[studentid].school
+            i_student = id2index[studentid]
+            student_contactlist = people[i_student].school
             append_contact!(teacherid, studentid, teacher_contactlist)
             append_contact!(studentid, teacherid, student_contactlist)
         end
-    end
-end
-
-function populate_SA2_schools!(people,dt, SA2_list, primaryschool_distribution::DataFrame,
-                secondaryschool_distribution::DataFrame, ncontacts_s2s, ncontacts_t2t, ncontacts_t2s)
-    for SA2 in SA2_list.SA2_code
-        age2first = persons.construct_age2index_by_SA2(people,dt,SA2,true)
-        age2last = persons.construct_age2index_by_SA2(people,dt,SA2,false)
-        populate_school_contacts!(people, dt, age2first, age2last, primaryschool_distribution::DataFrame, 
-                secondaryschool_distribution::DataFrame, ncontacts_s2s, ncontacts_t2t, ncontacts_t2s)
     end
 end
 

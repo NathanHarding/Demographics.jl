@@ -57,18 +57,11 @@ function age(person::Person{A, S}, dt::Date, unit::Symbol) where {A, S}
     result
 end
 
-"""
-- Sort people
-- Rewrite their ids in order
-- Return age2first, where people[age2first[i]] is the first agent with age i
-"""
-function construct_age2firstindex!(people::Vector{Person{A, S}}, dt) where {A, S}
-    sort!(people, by=(x) -> x.birthdate, rev=true)  # Sort from youngest to oldest
+"Return age2first, where people[age2first[age]] is the first person with age=age."
+function construct_age2firstindex(people::T, dt) where {T <: AbstractVector}
     age2first   = Dict{Int, Int}()  # age => first index containing age
     current_age = -1
-    for i = 1:length(people)
-        person    = people[i]
-        person.id = i
+    for (i, person) in enumerate(people)
         age_years = age(person, dt, :year)
         if age_years != current_age
             current_age = age_years
@@ -76,25 +69,6 @@ function construct_age2firstindex!(people::Vector{Person{A, S}}, dt) where {A, S
         end
     end
     age2first
-end
-
-function construct_age2index_by_SA2(people::Vector{Person{A,S}},dt,SA2,first::Bool) where {A,S}
-    age2idx = Dict{Int, Int}()  # age => first or last index containing age for the given SA2
-    current_age = -1
-    for i = 1:length(people)
-        if first == true
-            idx = i
-        else
-            idx = length(people)-i+1
-        end
-        person    = people[idx]
-        age_years = age(person, dt, :year)
-        if age_years != current_age && person.address == SA2
-            current_age = age_years
-            age2idx[current_age] = idx
-        end
-    end
-    age2idx
 end
 
 end

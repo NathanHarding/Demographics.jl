@@ -46,8 +46,8 @@ function construct_population(cfg::Config)
         end
         age        = agedist[rand(d_age), :age]
         birthdate  = today() - Year(age)
-        sa2_code   = sa2_pops.SA2_code[SA2_id]
-        people[id] = Person{Int64, Nothing}(id, birthdate, 'o', sa2_code, nothing)
+        address    = sa2_pops.SA2_code[SA2_id]
+        people[id] = Person{Int64, Nothing}(id, birthdate, 'o', address, nothing)
     end
 
     @info "$(now()) Populating contacts"
