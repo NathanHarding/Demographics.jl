@@ -6,7 +6,7 @@ A person is represented by a `Person` struct, which includes the fields:
 
 - `id` (Int)
 - `birthdate` (Date)
-- `sex` (Char, `m`, `f` or `o`)
+- `sex` (Char: `m`, `f` or `o`)
 - `address` (any type)
 - `state` (any type)
 
@@ -14,19 +14,20 @@ The address type can be chosen as required. For example it may be a `struct` rep
 a `Tuple` of lat-lon coordinates, a `String` containing a suburb/city name, an `Int` containing the postcode, etc.
 
 The `state` contains the non-demographic variables of interest, the values of which typically change over time.
-Examples include disease status, employment status, net wealth, etc.
+Examples include disease status, employment status, net wealth, etc. It too can be any type.
 
 The population of interest is constructed from ABS data, which gives an estimated population by age, sex and SA2.
 
 ## Contacts
 
 Networks of people are constructed by endowing each person with 5 contact lists, each being a vector of the IDs of other people in the population.
-Each of the 5 lists represents one of the following settings:
+The spatial structure of the networks is implied by the addresses of each person's contacts.
+The 5 contact lists represent the following settings:
 
 - Household: The people you live with.
 - Social:    Family and friends that you don't live with.
-- School:    People you see at school.
-- Workplace: People you work with. Applicable if you don't attend school and don't work at a school.
+- School:    People you see at school. Applicable if you attend school or work at a school. Includes pre-school, primary, secondary and tertiary institutions.
+- Workplace: People you work with. Applicable if you are working age (24-65 inclusive) and don't work at a school.
 - Community: Strangers that you interact with when shopping, commuting, visiting the public library, cinema, etc.
 
 Each member of the population is allocated to a household as follows:
