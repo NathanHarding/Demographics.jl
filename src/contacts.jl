@@ -21,42 +21,48 @@ using .workplaces
 using .social_networks
 using .community_networks
 
-const contactids = fill(0, 100)   # Buffer for a mutable contact list
+const contactids = fill(0, 1000)  # Buffer for a mutable contact list
 
 getcontact(i) = contactids[i]
 
+"""
+We currently assume that teachers and students live in the same SA2 as their school.
+We can relax this constraint by moving and/or swapping teachers/students between schools with prob=p.
+"""
 function populate_contacts!(people::Vector{Person{A, S}}, params, indata, dt::Date) where {A, S}
-    age2first_teacher = persons.construct_age2firstindex!(people, dt)  # teachers are working population so do not need per SA2 lists for assignment
-    SA2_list = indata["SA2_list"]
-    @info "$(now()) Constructing dictionary"
-    age2first = persons.construct_age2index_by_SA2(people,dt,SA2_list.SA2_code,true) # populate age2first indices from scratch
-    age2last = persons.construct_age2index_by_SA2(people,dt,SA2_list.SA2_code,false)
-    for SA2 in SA2_list.SA2_code
-        @info "$(now()) Populating $SA2 workplaces, schools, communities"
-        #@info "$(now()) Populating households"
-        populate_households!(people, dt, SA2, age2first[SA2], age2last[SA2], indata["household_distribution"])
-        #@info "$(now()) Populating schools"
-        populate_school_contacts!(people, dt, age2first[SA2], age2last[SA2], age2first_teacher, indata["primaryschool_distribution"], indata["secondaryschool_distribution"],
-                               Int(params[:ncontacts_s2s]), Int(params[:ncontacts_t2t]), Int(params[:ncontacts_t2s]))
-        #@info "$(now()) Populating communities"
-        populate_community_contacts_by_SA2!(people,SA2)
+    sort!(people, lt=(x, y) -> x.address <= y.address && x.birthdate >= y.birthdate)  # Group by SA2, then within SA2 sort from youngest to oldest
+    for (i, person) in enumerate(people)
+        person.id = i  # Rewrite ids
     end
-
+    i1 = 0  # people[i1:i2] = people from SA2
+    i2 = 0
+    npeople        = length(people)
+    hhold_dist     = indata["household_distribution"]
+    primary_dist   = indata["primaryschool_distribution"]
+    secondary_dist = indata["secondaryschool_distribution"]
+    ncontacts_s2s  = Int(params[:ncontacts_s2s])
+    ncontacts_t2t  = Int(params[:ncontacts_t2t])
+    ncontacts_t2s  = Int(params[:ncontacts_t2s])
+    for i = 1:npeople  # Loop through SA2s. Could use a while loop but best to cap the number of iterations.
+        i1 = i2 + 1
+        sa2code = people[i1].address
+        @info "$(now()) Populating $(sa2code) households, schools, communities"
+        i2         = people_from_sa2(people, i1)
+        people_sa2 = view(people, i1:i2)
+        isempty(people_sa2) && continue
+        id2index  = Dict(person.id => i for (i, person) in enumerate(people_sa2))
+        age2first = persons.construct_age2firstindex(people_sa2, dt)
+        hdist     = view(hhold_dist, hhold_dist.SA2_MAINCODE_2016 .== sa2code, :)
+        populate_households!(people_sa2, dt, age2first, hdist, id2index)
+        populate_school_contacts!(people_sa2, dt, age2first, primary_dist, secondary_dist, ncontacts_s2s, ncontacts_t2t, ncontacts_t2s, id2index)
+        populate_community_contacts!(people_sa2, sa2code, id2index)
+        i2 == npeople && break
+    end
     @info "$(now()) Populating work places"
-    populate_workplaces!(people, dt, indata["workplace_distribution"])    
+    id2index = Dict(person.id => i for (i, person) in enumerate(people))
+    populate_workplaces!(people, dt, indata["workplace_distribution"], id2index)
     @info "$(now()) Populating social networks"
-    populate_social_contacts!(people)
-    # @info "$(now()) Populating households"
-    # populate_households_by_SA2!(people, dt, indata["SA2_list"], indata["household_distribution"])
-    # @info "$(now()) Populating schools"
-    # populate_SA2_schools!(people, dt, indata["SA2_list"], indata["primaryschool_distribution"], indata["secondaryschool_distribution"],
-    #                           Int(params[:ncontacts_s2s]), Int(params[:ncontacts_t2t]), Int(params[:ncontacts_t2s]))
-    # @info "$(now()) Populating work places"
-    # populate_workplaces!(people, dt, indata["workplace_distribution"])
-    # @info "$(now()) Populating communities"
-    # populate_community_contacts_by_SA2!(people,indata["SA2_list"])
-    # @info "$(now()) Populating social networks"
-    # populate_social_contacts!(people)
+    populate_social_contacts!(people, id2index)
 end
 
 function get_contactlist(person::Person{A, S}, network::Symbol, params) where {A, S}
@@ -145,6 +151,16 @@ function get_regular_graph_contactids!(community::Vector{Int}, i_person::Int, nc
         contactids[j] = community[i]
     end
     j
+end
+
+function people_from_sa2(people, i1)
+    npeople = length(people)
+    sa2     = people[i1].address
+    for i = (i1 + 1):npeople
+        people[i].address == sa2 && continue
+        return i - 1  # Most recent person with address == sa2
+    end
+    npeople  # i2 == npeople
 end
 
 end

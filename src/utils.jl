@@ -1,6 +1,6 @@
 module utils
 
-export import_data, sample_person, sample_person_SA2, append_contact!, assign_contacts_regulargraph!
+export import_data, sample_person, append_contact!, assign_contacts_regulargraph!, construct_agerange_indices
 
 using CSV
 using DataFrames
@@ -21,13 +21,14 @@ function append_contact!(personid, contactid::Int, contactlist::Vector{Int})
 end
 
 "Randomly assign ncontacts to each person whose id is a value of vertexid2personid."
-function assign_contacts_regulargraph!(people, contactcategory::Symbol, ncontacts::Int, vertexid2personid)
+function assign_contacts_regulargraph!(people, contactcategory::Symbol, ncontacts::Int, vertexid2personid, id2index)
     nvertices = length(vertexid2personid)
     ncontacts = adjust_ncontacts_for_regular_graph(nvertices, ncontacts)  # Ensure a regular graph can be constructed
     g = random_regular_graph(nvertices, ncontacts)  # nvertices each with ncontacts (edges to ncontacts other vertices)
     adjlist = g.fadjlist
     for (vertexid, personid) in vertexid2personid
-        person = people[personid]
+        i_person = id2index[personid]
+        person   = people[i_person]
         contactlist_vertex = adjlist[vertexid]  # Contact list as vertexid domain...convert to personid domain
         contactlist_person = getproperty(person, contactcategory)
         if isnothing(contactlist_person)
@@ -59,30 +60,41 @@ end
 Return the id of a random person whose is unplaced and in the specified age range.
 If one doesn't exist return a random id from unplaced_people.
 """
-function sample_person(unplaced_people::Set{Int}, min_age, max_age, age2first)
-    i1 = age2first[min_age]
-    i2 = age2first[max_age + 1] - 1
-    s  = i1:i2      # Indices of people in the age range
-    n  = length(s)  # Maximum number of random draws
+function sample_person(unplaced_people::Set{Int}, people, min_age, max_age, age2first, npeople)
+    i1_i2 = construct_agerange_indices(age2first, min_age, max_age, npeople)
+    n     = length(i1_i2)  # Maximum number of random draws
     for i = 1:n
-        id = rand(s)  # id is a random person in the age range
-        id in unplaced_people && return id  # id is also an unplaced person
+        index = rand(i1_i2)  # Index of a random person in the age range
+        id    = people[index].id
+        id in unplaced_people && return index, id  # id is also an unplaced person
     end
-    rand(unplaced_people)
+    index = rand(unplaced_people)
+    index, people[index].id
 end
-function sample_person_SA2(unplaced_people::Set{Int}, min_age, max_age, age2first,age2last)
-    s = []
-    for age = min_age:max_age
-        i1 = age2first[age]
-        i2 = age2last[age]
-        union(s,i1:i2)    # Indices of people in the age range added to list s
-    end  
-    n  = length(s)  # Maximum number of random draws
-    for i = 1:n
-        id = rand(s)  # id is a random person in the age range
-        id in unplaced_people && return id  # id is also an unplaced person
+
+"""
+Return the indices (as a Range) of people aged between min_age and max_age inclusive.
+We can use age2first instead of the entire people vector.
+"""
+function construct_agerange_indices(age2first, min_age, max_age, npeople)
+    i1 = 0
+    i2 = 0
+    for age = min_age:130
+        !haskey(age2first, age) && continue
+        if i1 == 0
+            if age <= max_age
+                i1 = age2first[age]
+            else
+                return 0:0  # There are no people in the required age range
+            end
+        end
+        if i2 == 0 && age > max_age
+            i2 = age2first[age] - 1
+            break
+        end
     end
-    rand(unplaced_people)
+    i2 > 0 && return i1:i2
+    i1:npeople
 end
 
 end

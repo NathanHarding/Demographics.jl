@@ -6,14 +6,13 @@ using Random
 
 const socialcontacts = Int[]   # Contains person IDs. Social contacts can be derived for each person.
 
-function populate_social_contacts!(people)
-    npeople = length(people)
-    for i = 1:npeople
-        push!(socialcontacts, people[i].id)
+function populate_social_contacts!(people, id2index)
+    for person in people
+        push!(socialcontacts, person.id)
     end
     shuffle!(socialcontacts)
-    for i = 1:npeople
-        id = socialcontacts[i]
+    for (i, id) in enumerate(socialcontacts)
+        i_people = id2index[id]
         people[id].i_social = i
     end
 end

@@ -10,7 +10,7 @@ using ..persons
 
 const _workplaces = Vector{Int}[]  # workplaces[i][j] is the id of the jth worker in the ith workplace.
 
-function populate_workplaces!(people, dt::Date, workplace_distribution::DataFrame)
+function populate_workplaces!(people, dt::Date, workplace_distribution::DataFrame, id2index)
     d_nworkers       = Categorical(workplace_distribution.proportion)  # Categories are: 0 employees, 1-4, 5-19, 20-199, 200+
     unplaced_workers = Set([person.id for person in people if age(person, dt, :year) > 23 && isnothing(person.school)])
     imax = length(unplaced_workers)
@@ -24,7 +24,8 @@ function populate_workplaces!(people, dt::Date, workplace_distribution::DataFram
             workerid = rand(unplaced_workers)
             pop!(unplaced_workers, workerid)
             workplace[j] = workerid
-            people[workerid].ij_workplace = (idx, j)
+            i_person = id2index[workerid]
+            people[i_person].ij_workplace = (idx, j)
         end
         push!(_workplaces, workplace)
     end
