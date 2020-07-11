@@ -68,15 +68,18 @@ function tabulate_workplaces(wplaces)
     result
 end
 
+"Result: A long table with 2 columns: address, contactid."
 function tabulate_community_contacts(address2contacts::Dict{Int, Vector{Int}})
-    n      = length(address2contacts)
+    n      = sum(length(contactids) for (address, contactids) in address2contacts)
     i      = 0
-    result = DataFrame(address=fill(0, n), contacts=missings(String, n))
-    for (address, contactlist) in address2contacts
-        i += 1
-        result[i, :address]  = address
-        isempty(contactlist) && continue
-        result[i, :contacts] = string(contactlist)
+    result = DataFrame(address=fill(0, n), contactid=fill(0, n))
+    for (address, contactids) in address2contacts
+        for contactid in contactids
+            i += 1
+            result[i, :address]   = address
+            isempty(contactids) && continue
+            result[i, :contactid] = contactid
+        end
     end
     result
 end
