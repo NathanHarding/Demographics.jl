@@ -9,12 +9,17 @@ using JSON  # For parsing string(vector) into vector. E.g., JSON.parse("[1,2,3]"
 using Logging
 
 using ..persons
+using ..contacts
 using ..contacts.households
 using ..contacts.workplaces
 using ..contacts.social_networks
 using ..contacts.community_networks
 
 function save(people::Vector{Person{A, S}}, outdir::String) where {A, S}
+    @info "$(now()) Writing params to disk"
+    table = [(name=k, value=v) for (k, v) in contacts._params]
+    CSV.write(joinpath(outdir, "params.tsv"), table; delim='\t')
+
     @info "$(now()) Writing people to disk"
     table = tabulate_people(people)
     CSV.write(joinpath(outdir, "people.tsv"), table; delim='\t')
@@ -34,6 +39,16 @@ function save(people::Vector{Person{A, S}}, outdir::String) where {A, S}
     @info "$(now()) Writing social networks to disk"
     table = DataFrame(socialcontacts = social_networks.socialcontacts)
     CSV.write(joinpath(outdir, "socialcontacts.tsv"), table; delim='\t')
+end
+
+function load(datadir::String)
+    !isdir(datadir) && error("Directory does not exist: $(datadir)")
+    load_params!(joinpath(datadir, "params.tsv"))
+    load_households!(joinpath(datadir, "households.tsv"))
+    load_workplaces!(joinpath(datadir, "workplaces.tsv"))
+    load_communitycontacts!(joinpath(datadir, "communitycontacts.tsv"))
+    load_socialcontacts!(joinpath(datadir, "socialcontacts.tsv"))
+    load_people(joinpath(datadir, "people.tsv"))  # Returns Vector{Person}
 end
 
 ###############################################################################
@@ -119,23 +134,15 @@ function household_to_row!(result, i, hhold)
 end
 
 ################################################################################
+# Load
 
-function unstringify_vector(s::String, T::DataType)
-    s == "missing"    && return T[]
-    occursin("[]", s) && return T[]  # s is a stringified empty vector
-    v = JSON.parse(s)  # Vector{Any}
-    convert(Vector{T}, v)
-end
-
-unstringify_vector(s::Missing, T::DataType) = T[]
-
-function load(datadir::String)
-    !isdir(datadir) && error("Directory does not exist: $(datadir)")
-    load_households!(joinpath(datadir, "households.tsv"))
-    load_workplaces!(joinpath(datadir, "workplaces.tsv"))
-    load_communitycontacts!(joinpath(datadir, "communitycontacts.tsv"))
-    load_socialcontacts!(joinpath(datadir, "socialcontacts.tsv"))
-    load_people(joinpath(datadir, "people.tsv"))  # Returns Vector{Person}
+function load_params!(filename::String)
+    @info "$(now()) Loading params"
+    data = DataFrame(CSV.File(filename; delim='\t'))
+    dest = contacts._params
+    for row in eachrow(data)
+        dest[Symbol(row[:name])] = Float64(row[:value])
+    end
 end
 
 function load_households!(filename::String)
@@ -198,5 +205,17 @@ function load_people(filename::String)
     end
     people
 end
+
+################################################################################
+# Utils
+
+function unstringify_vector(s::String, T::DataType)
+    s == "missing"    && return T[]
+    occursin("[]", s) && return T[]  # s is a stringified empty vector
+    v = JSON.parse(s)  # Vector{Any}
+    convert(Vector{T}, v)
+end
+
+unstringify_vector(s::Missing, T::DataType) = T[]
 
 end

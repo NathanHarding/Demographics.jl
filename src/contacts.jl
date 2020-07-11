@@ -22,6 +22,7 @@ using .social_networks
 using .community_networks
 
 const contactids = fill(0, 1000)  # Buffer for a mutable contact list
+const _params = Dict{Symbol, Float64}()  # Used for saving/loading to/from disk
 
 getcontact(i) = contactids[i]
 
@@ -30,6 +31,10 @@ We currently assume that teachers and students live in the same SA2 as their sch
 We can relax this constraint by moving and/or swapping teachers/students between schools with prob=p.
 """
 function populate_contacts!(people::Vector{Person{A, S}}, params, indata, dt::Date) where {A, S}
+    empty!(_params)
+    for (k, v) in params  # Update params
+        _params[k] = v
+    end
     sort!(people, lt=(x, y) -> x.address <= y.address && x.birthdate >= y.birthdate)  # Group by SA2, then within SA2 sort from youngest to oldest
     for (i, person) in enumerate(people)
         person.id = i  # Rewrite ids
@@ -40,9 +45,9 @@ function populate_contacts!(people::Vector{Person{A, S}}, params, indata, dt::Da
     hhold_dist     = indata["household_distribution"]
     primary_dist   = indata["primaryschool_distribution"]
     secondary_dist = indata["secondaryschool_distribution"]
-    ncontacts_s2s  = Int(params[:ncontacts_s2s])
-    ncontacts_t2t  = Int(params[:ncontacts_t2t])
-    ncontacts_t2s  = Int(params[:ncontacts_t2s])
+    ncontacts_s2s  = Int(_params[:ncontacts_s2s])
+    ncontacts_t2t  = Int(_params[:ncontacts_t2t])
+    ncontacts_t2s  = Int(_params[:ncontacts_t2s])
     for i = 1:npeople  # Loop through SA2s. Could use a while loop but best to cap the number of iterations.
         i1 = i2 + 1
         sa2code = people[i1].address
@@ -65,7 +70,7 @@ function populate_contacts!(people::Vector{Person{A, S}}, params, indata, dt::Da
     populate_social_contacts!(people, id2index)
 end
 
-function get_contactlist(person::Person{A, S}, network::Symbol, params) where {A, S}
+function get_contactlist(person::Person{A, S}, network::Symbol) where {A, S}
     ncontacts = 0
     if network == :household
         ncontacts = get_household_contactids!(person.i_household, person.id, contactids)
@@ -74,12 +79,12 @@ function get_contactlist(person::Person{A, S}, network::Symbol, params) where {A
     elseif network == :workplace
         if !isnothing(person.ij_workplace)
             i, j = person.ij_workplace
-            ncontacts = get_regular_graph_contactids!(workplaces._workplaces[i], j, Int(params[:n_workplace_contacts]), contactids)
+            ncontacts = get_regular_graph_contactids!(workplaces._workplaces[i], j, Int(_params[:n_workplace_contacts]), contactids)
         end
     elseif network == :community
-        ncontacts = get_regular_graph_contactids!(community_networks.communitycontacts[person.address], person.i_community, Int(params[:n_community_contacts]), contactids)
+        ncontacts = get_regular_graph_contactids!(community_networks.communitycontacts[person.address], person.i_community, Int(_params[:n_community_contacts]), contactids)
     elseif network == :social
-        ncontacts = get_regular_graph_contactids!(social_networks.socialcontacts, person.i_social, Int(params[:n_social_contacts]), contactids)
+        ncontacts = get_regular_graph_contactids!(social_networks.socialcontacts, person.i_social, Int(_params[:n_social_contacts]), contactids)
     end
     ncontacts
 end
