@@ -2,9 +2,10 @@ module saveload
 
 export save, load
 
+using CSV
+using DataFrames
 using Dates
-#using JSON
-using JSON3
+using Logging
 
 using ..persons
 using ..contacts.households
@@ -12,26 +13,111 @@ using ..contacts.workplaces
 using ..contacts.social_networks
 using ..contacts.community_networks
 
+function save(people::Vector{Person{A, S}}, outdir::String) where {A, S}
+    @info "$(now()) Converting people to table"
+    table = tabulate_people(people)
+    @info "$(now()) Writing people to disk"
+    CSV.write(joinpath(outdir, "people.tsv"), table; delim='\t')
 
-JSON3.StructTypes.StructType(::Type{Person{A, S}}) where {A, S} = JSON3.StructTypes.Mutable()
-JSON3.StructTypes.StructType(::Type{households.Household})      = JSON3.StructTypes.Mutable()
+    @info "$(now()) Converting households to table"
+    table = tabulate_households(households._households)
+    CSV.write(joinpath(outdir, "households.tsv"), table; delim='\t')
 
-Person{A, S}() where {A, S} = Person(0, Date(1900, 1, 1), 'o', 'x', nothing, 0, nothing, nothing, 0, 0)
-households.Household() = households.Household(0, 0, Int[], Int[])
+    @info "$(now()) Converting work places to table"
+    table = tabulate_workplaces(workplaces._workplaces)
+    CSV.write(joinpath(outdir, "workplaces.tsv"), table; delim='\t')
 
+    @info "$(now()) Converting community contacts to table"
+    table = tabulate_community_contacts(community_networks.communitycontacts)
+    CSV.write(joinpath(outdir, "communitycontacts.tsv"), table; delim='\t')
 
-function save(people::Vector{Person{A, S}}, filename::String) where {A, S}
-    d = Dict{String, Any}()
-    d["people"]            = people
-    d["households"]        = households._households
-    d["workplaces"]        = workplaces._workplaces
-    d["communitycontacts"] = community_networks.communitycontacts
-    d["socialcontacts"]    = social_networks.socialcontacts
-    #s = JSON.json(d)
-    s = JSON3.write(d)
-    write(filename, s)
+    @info "$(now()) Converting social networks to table"
+    table = DataFrame(socialcontacts = social_networks.socialcontacts)
+    CSV.write(joinpath(outdir, "socialcontacts.tsv"), table; delim='\t')
 end
 
+###############################################################################
+# Vector of objects to table
+
+function tabulate_people(people::Vector{Person{Int, Nothing}})
+    n      = length(people)
+    result = DataFrame(id=fill(0, n), birthdate=Vector{Date}(undef, n), sex=fill('o', n), address=fill(0, n), i_household=fill(0, n),
+                       school=missings(String, n), i_workplace=missings(Int, n), j_workplace=missings(Int, n),
+                       i_community=fill(0, n), i_social=fill(0, n))
+    for (i, person) in enumerate(people)
+        person_to_row!(result, i, person)
+    end
+    result
+end
+
+function tabulate_households(hholds)
+    n      = length(hholds)
+    result = DataFrame(max_nadults=fill(0, n), max_nchildren=fill(0, n), adults=missings(String, n), children=missings(String, n))
+    for (i, hhold) in enumerate(hholds)
+        household_to_row!(result, i, hhold)
+    end
+    result
+end
+
+function tabulate_workplaces(wplaces)
+    n      = length(wplaces)
+    result = DataFrame(workplace=missings(String, n))
+    for (i, wp) in enumerate(wplaces)
+        result[i, :workplace] = string(wp)
+    end
+    result
+end
+
+function tabulate_community_contacts(address2contacts::Dict{Int, Vector{Int}})
+    n      = length(address2contacts)
+    i      = 0
+    result = DataFrame(address=fill(0, n), contacts=missings(String, n))
+    for (address, contactlist) in address2contacts
+        i += 1
+        result[i, :address]  = address
+        isempty(contactlist) && continue
+        result[i, :contacts] = string(contactlist)
+    end
+    result
+end
+
+###############################################################################
+# Object to row
+
+"Store person in result[i, :]"
+function person_to_row!(result::DataFrame, i::Int, person::Person{Int, Nothing})
+    # Demographic variables
+    result[i, :id]        = person.id
+    result[i, :birthdate] = person.birthdate
+    result[i, :sex]       = person.sex
+    result[i, :address]   = person.address
+
+    # Contacts
+    result[i, :i_household] = person.i_household
+    result[i, :i_community] = person.i_community
+    result[i, :i_social]    = person.i_social
+    school = person.school
+    if !isnothing(school)
+        result[i, :school] = string(school)
+    end   
+    ij = person.ij_workplace
+    if !isnothing(ij)
+        result[i, :i_workplace] = ij[1]
+        result[i, :j_workplace] = ij[2]
+    end
+    result
+end
+
+function household_to_row!(result, i, hhold)
+    result[i, :max_nadults]   = hhold.max_nadults
+    result[i, :max_nchildren] = hhold.max_nchildren
+    result[i, :adults]        = string(hhold.adults)
+    result[i, :children]      = string(hhold.children)
+end
+
+################################################################################
+
+#=
 function load(filename::String)
     s = String(read(filename))
     d = JSON3.read(s)
@@ -98,5 +184,6 @@ function Person{A, S}(d::T) where {A, S, T <: Dict}
     i_social     = d["i_social"]
     Person{A, S}(id, birthdate, sex, address, state, i_household, school, ij_workplace, i_community, i_social)
 end
+=#
 
 end
