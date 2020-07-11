@@ -5,6 +5,7 @@ export save, load
 using CSV
 using DataFrames
 using Dates
+using JSON  # For parsing string(vector) into vector. E.g., JSON.parse("[1,2,3]") == [1,2,3]
 using Logging
 
 using ..persons
@@ -14,24 +15,23 @@ using ..contacts.social_networks
 using ..contacts.community_networks
 
 function save(people::Vector{Person{A, S}}, outdir::String) where {A, S}
-    @info "$(now()) Converting people to table"
-    table = tabulate_people(people)
     @info "$(now()) Writing people to disk"
+    table = tabulate_people(people)
     CSV.write(joinpath(outdir, "people.tsv"), table; delim='\t')
 
-    @info "$(now()) Converting households to table"
+    @info "$(now()) Writing households to disk"
     table = tabulate_households(households._households)
     CSV.write(joinpath(outdir, "households.tsv"), table; delim='\t')
 
-    @info "$(now()) Converting work places to table"
+    @info "$(now()) Writing work places to disk"
     table = tabulate_workplaces(workplaces._workplaces)
     CSV.write(joinpath(outdir, "workplaces.tsv"), table; delim='\t')
 
-    @info "$(now()) Converting community contacts to table"
+    @info "$(now()) Writing community contacts to disk"
     table = tabulate_community_contacts(community_networks.communitycontacts)
     CSV.write(joinpath(outdir, "communitycontacts.tsv"), table; delim='\t')
 
-    @info "$(now()) Converting social networks to table"
+    @info "$(now()) Writing social networks to disk"
     table = DataFrame(socialcontacts = social_networks.socialcontacts)
     CSV.write(joinpath(outdir, "socialcontacts.tsv"), table; delim='\t')
 end
@@ -114,79 +114,89 @@ end
 function household_to_row!(result, i, hhold)
     result[i, :max_nadults]   = hhold.max_nadults
     result[i, :max_nchildren] = hhold.max_nchildren
-    result[i, :adults]        = string(hhold.adults)
-    result[i, :children]      = string(hhold.children)
+    result[i, :adults]        = isempty(hhold.adults)   ? missing : string(hhold.adults)
+    result[i, :children]      = isempty(hhold.children) ? missing : string(hhold.children)
 end
 
 ################################################################################
 
-#=
-function load(filename::String)
-    s = String(read(filename))
-    d = JSON3.read(s)
-    #d = JSON.parse(s)
-    load_households!(d["households"])
-    load_workplaces!(d["workplaces"])
-    load_communitycontacts!(d["communitycontacts"])
-    load_socialcontacts!(d["socialcontacts"])
-    construct_people(d["people"])
+function unstringify_vector(s::String, T::DataType)
+    s == "missing"    && return T[]
+    occursin("[]", s) && return T[]  # s is a stringified empty vector
+    v = JSON.parse(s)  # Vector{Any}
+    convert(Vector{T}, v)
 end
 
-function load_households!(v)
+unstringify_vector(s::Missing, T::DataType) = T[]
+
+function load(datadir::String)
+    !isdir(datadir) && error("Directory does not exist: $(datadir)")
+    load_households!(joinpath(datadir, "households.tsv"))
+    load_workplaces!(joinpath(datadir, "workplaces.tsv"))
+    load_communitycontacts!(joinpath(datadir, "communitycontacts.tsv"))
+    load_socialcontacts!(joinpath(datadir, "socialcontacts.tsv"))
+    load_people(joinpath(datadir, "people.tsv"))  # Returns Vector{Person}
+end
+
+function load_households!(filename::String)
+    @info "$(now()) Loading households"
+    data = DataFrame(CSV.File(filename; delim='\t'))
     dest = households._households
     empty!(dest)
-    for d in v
-        hh = households.Household(d["max_nadults"], d["max_nchildren"], d["adults"], d["children"])
-        push!(dest, hh)
+    for row in eachrow(data)
+        adults   = unstringify_vector(row[:adults], Int)
+        children = unstringify_vector(row[:children], Int)
+        hhold    = households.Household(row[:max_nadults], row[:max_nchildren], adults, children)
+        push!(dest, hhold)
     end
 end
 
-function load_workplaces!(v)
+function load_workplaces!(filename::String)
+    @info "$(now()) Loading work places"
+    data = DataFrame(CSV.File(filename; delim='\t'))
     dest = workplaces._workplaces
     empty!(dest)
-    for v2 in v
-        push!(dest, v2)
+    for row in eachrow(data)
+        workplace = unstringify_vector(row[:workplace], Int)
+        push!(dest, workplace)
     end
 end
 
-function load_communitycontacts!(v)
+function load_communitycontacts!(filename::String)
+    @info "$(now()) Loading community contacts"
+    data = DataFrame(CSV.File(filename; delim='\t'))
     dest = community_networks.communitycontacts
     empty!(dest)
-    for x in v
-        push!(dest, x)
+    for subdata in groupby(data, :address)
+        address = subdata[1, :address]
+        dest[address] = [x for x in subdata.contactid]
     end
 end
 
-function load_socialcontacts!(v)
+function load_socialcontacts!(filename::String)
+    @info "$(now()) Loading social contacts"
+    data = DataFrame(CSV.File(filename; delim='\t'))
     dest = social_networks.socialcontacts
     empty!(dest)
-    for x in v
-        push!(dest, x)
+    for row in eachrow(data)
+        push!(dest, row[:socialcontacts])
     end
 end
 
-function construct_people(v)
-    npeople = size(v, 1)
-    people  = Vector{Person{String, Nothing}}(undef, npeople)
-    for i = 1:npeople
-        people[i] = Person{String, Nothing}(v[i])
+function load_people(filename::String)
+    @info "$(now()) Loading people"
+    data    = DataFrame(CSV.File(filename; delim='\t'))
+    npeople = size(data, 1)
+    people  = Vector{Person{Int, Nothing}}(undef, npeople)
+    i = 0
+    for row in eachrow(data)
+        i += 1
+        school       = ismissing(row[:school]) ? nothing : unstringify_vector(row[:school], Int)
+        ij_workplace = ismissing(row[:i_workplace]) ? nothing : (row[:i_workplace], row[:j_workplace])
+        people[i]    = Person{Int, Nothing}(row[:id], row[:birthdate], row[:sex][1], row[:address], nothing,
+                                            row[:i_household], school, ij_workplace, row[:i_community], row[:i_social])
     end
     people
 end
-
-function Person{A, S}(d::T) where {A, S, T <: Dict}
-    id           = d["id"]
-    birthdate    = Date(d["birthdate"])
-    sex          = d["sex"][1]  # Char
-    address      = d["address"]
-    state        = nothing
-    i_household  = d["i_household"]
-    school       = isnothing(d["school"]) ? nothing : [x for x in d["school"]]
-    ij_workplace = isnothing(d["ij_workplace"]) ? nothing : Tuple(d["ij_workplace"])
-    i_community  = d["i_community"]
-    i_social     = d["i_social"]
-    Person{A, S}(id, birthdate, sex, address, state, i_household, school, ij_workplace, i_community, i_social)
-end
-=#
 
 end

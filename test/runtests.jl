@@ -4,6 +4,7 @@ using Demographics
 using Dates
 using Logging
 
+
 @info "$(now()) Constructing population"
 configfile = joinpath(pwd(), "config", "config.yml")
 people = construct_population(configfile)
@@ -12,7 +13,9 @@ people = construct_population(configfile)
 outdir = joinpath(pwd(), "data", "output")
 save(people, outdir)
 
-#=
 @info "$(now()) Loading population from disk"  # As well as households, workplaces, social contacts and community contacts
-popn = load(outfile)
-=#
+people2 = load(outdir)
+
+@test length(people) == length(people2)
+#@test people[1] == people2[1]
+#@test people[end] == people2[end]
