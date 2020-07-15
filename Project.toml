@@ -1,7 +1,7 @@
 name = "Demographics"
 uuid = "ce7d0591-943f-4b9f-ac68-e93022213889"
 authors = ["jock.lawrie <jock.lawrie@gmail.com>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
