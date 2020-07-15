@@ -3,15 +3,15 @@
 ```julia
 using Demographics
 
-# Construct population
+# Construct population according to the config.
 configfile = joinpath(pwd(), "config", "config.yml")
 people = construct_population(configfile)
 
-# Save population to disk (as well as households, workplaces, social contacts and community contacts which are stored within the Demographics module)
+# Save the population and contacts to the specified directory.
+outdir = "/path/to/output/directory"
+save(people, outdir)
 
-outfile = ""
-save(people, outfile)
-
-# Load population from disk (as well as households, workplaces, social contacts and community contacts which are stored within the Demographics module)
-pop = load(outfile)
+# Load the population and contacts from disk.
+# The contacts are stored in containers as variables within the Demographics module.
+people = load(outdir)
 ```
