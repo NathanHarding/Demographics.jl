@@ -13,7 +13,7 @@ function populate_social_contacts!(people, id2index)
     shuffle!(socialcontacts)
     for (i, id) in enumerate(socialcontacts)
         i_people = id2index[id]
-        people[id].i_social = i
+        people[i_people].i_social = i
     end
 end
 

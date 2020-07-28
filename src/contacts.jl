@@ -58,11 +58,29 @@ function populate_contacts!(people::Vector{Person{A, S}}, params, indata, dt::Da
         id2index  = Dict(person.id => i for (i, person) in enumerate(people_sa2))
         age2first = persons.construct_age2firstindex(people_sa2, dt)
         hdist     = view(hhold_dist, hhold_dist.SA2_MAINCODE_2016 .== sa2code, :)
-        populate_households!(people_sa2, dt, age2first, hdist, id2index)
-        populate_school_contacts!(people_sa2, dt, age2first, primary_dist, secondary_dist, ncontacts_s2s, ncontacts_t2t, ncontacts_t2s, id2index)
-        populate_community_contacts!(people_sa2, sa2code, id2index)
+        if isempty(hdist)  # sa2code has no households. E.g., Wilson's Promontory in Victoria (national park)
+            n = size(people_sa2, 1)
+            @warn "$(now()) The $(n) people in SA2 $(sa2code) will be removed from the population because we don't have household data for this SA2"
+            for person in people_sa2
+                person.address = -1  # These people are filtered out of the population below
+            end
+        else
+            populate_households!(people_sa2, dt, age2first, hdist, id2index)
+            populate_school_contacts!(people_sa2, dt, age2first, primary_dist, secondary_dist, ncontacts_s2s, ncontacts_t2t, ncontacts_t2s, id2index)
+            populate_community_contacts!(people_sa2, sa2code, id2index)
+        end
         i2 == npeople && break
     end
+    @info "$(now()) Filtering out people from areas without households"
+    npeople_old = length(people)
+    filter!((person) -> person.address != -1, people)
+    n_removed = npeople_old - length(people)
+    if n_removed == 0
+        @info "$(now())    No people were filtered out"
+    else
+        @warn "$(now())    Filtered out $(n_removed) people"
+    end
+
     @info "$(now()) Populating work places"
     id2index = Dict(person.id => i for (i, person) in enumerate(people))
     populate_workplaces!(people, dt, indata["workplace_distribution"], id2index)
