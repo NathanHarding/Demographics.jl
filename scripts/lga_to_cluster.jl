@@ -1,5 +1,12 @@
 #=
   Content: Map each LGA to a health service cluster.
+
+  Note:
+  Some Melbourne has elements of 4 health service clusters, and
+  14 other LGAs have elements of 2 heallth service clusters. In these
+  cases we count the number of services within each cluster for the LGA and
+  choose the cluster that contains the most services.
+  Not precise but probably as close as we can get unless we get lat-lon per service and map these to SA2.  
 =#
 
 using CSV
