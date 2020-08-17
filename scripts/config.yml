@@ -1,10 +1,11 @@
-## Nathan
-#input_datadir:  "H:\\Documents\\data\\"
-#output_datadir: "H:\\Documents\\dev\\Demographics.jl\\test\\data\\input\\"
-#subpop_module: true #Boolean for including subpopulation generation
+# Nathan
+input_datadir:  "..\\public_data_files_covid"
+output_datadir: ".\\test\\data\\input\\"
+subpop_module: true #Boolean for including subpopulation generation
+regions_file: "SA2_subset_whole_pop.tsv"  # Exclude Upper Yarra Valley, Braeside (204011061, 208031184) because of small population
 
-## Jock
-input_datadir:  "C:\\projects\\data\\dhhs\\demographics\\input"
-output_datadir: "C:\\projects\\data\\dhhs\\demographics\\output"
-subpop_module: false  # Boolean. If true then use regions_file to generate a population using a proper subset of the SA2s. Ootherwise use all SA2s.
-regions_file: "SA2s_in_lockdown_july2020.tsv"  # Exclude Upper Yarra Valley, Braeside (204011061, 208031184) because of small population
+# ## Jock
+# input_datadir:  "C:\\projects\\data\\dhhs\\demographics\\input"
+# output_datadir: "C:\\projects\\data\\dhhs\\demographics\\output"
+# subpop_module: false  # Boolean. If true then use regions_file to generate a population using a proper subset of the SA2s. Ootherwise use all SA2s.
+# regions_file: "SA2s_in_lockdown_july2020.tsv"  # Exclude Upper Yarra Valley, Braeside (204011061, 208031184) because of small population
