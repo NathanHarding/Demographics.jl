@@ -67,12 +67,12 @@ while n_unplaced_children > 0
     set household contacts
 """
 function populate_households_with_children!(people, dt, age2first, household_distribution)
+    family_household_distribution = construct_child_household_distribution(household_distribution)
     npeople = length(people)
     unplaced_children = Set(construct_agerange_indices(age2first, 0, 17, npeople))
     rand(unplaced_children) == 0 && return  # No children to place
     unplaced_parents = Set(construct_agerange_indices(age2first, 20, 54, npeople))
     rand(unplaced_parents) == 0 && return   # No parents to place
-    family_household_distribution = construct_child_household_distribution(household_distribution)
     imax = length(unplaced_children)
     for i = 1:imax  # Cap the number of iterations by placing at least 1 child per iteration
         # Init household
@@ -119,15 +119,9 @@ end
 function construct_child_household_distribution(household_distribution::T) where {T <: AbstractDataFrame}
     result = DataFrame(nadults=Int[], nchildren=Int[], nhouseholds=Int[])
     family_household_distribution = view(household_distribution, household_distribution.nchildren .> 0, :)
-    if isempty(family_household_distribution)
-        @warn "$(now())   There are children in the population but not in the household data...fabricating households with children"
-        push!(result, (nadults=1, nchildren=2, nhouseholds=1))  # Single parent, 2 children
-        push!(result, (nadults=2, nchildren=2, nhouseholds=1))  # Two parents, 2 children
-    else
-        for subdata in groupby(family_household_distribution, [:nadults, :nchildren])
-            row = (nadults=subdata[1, :nadults], nchildren=subdata[1, :nchildren], nhouseholds=sum(subdata.nhouseholds))
-            push!(result, row)
-        end
+    for subdata in groupby(family_household_distribution, [:nadults, :nchildren])
+        row = (nadults=subdata[1, :nadults], nchildren=subdata[1, :nchildren], nhouseholds=sum(subdata.nhouseholds))
+        push!(result, row)
     end
     result[!, :proportion] = result.nhouseholds ./ sum(result.nhouseholds)
     result
@@ -158,11 +152,10 @@ while n_unplaced_adults > 0
     set household contacts
 """
 function populate_households_without_children!(people, household_distribution::T, id2index) where {T <: AbstractDataFrame}
-    unplaced_adults = Set([person.id for person in people if person.i_household == 0])
-    isempty(unplaced_adults) && return
     nonfamily_household_distribution = construct_nonchild_household_distribution(household_distribution)
+    unplaced_adults = Set([person.id for person in people if person.i_household == 0])
     imax = length(unplaced_adults)
-    for i = 1:imax  # Cap the number of iterations by placing at least 1 adult per iteration
+    for i = 1:imax  # Cap the number of iterations by placing at least 1 child per iteration
         # Init household
         hh  = draw_household_without_children(length(unplaced_adults), nonfamily_household_distribution)
         na  = hh.max_nadults
@@ -186,16 +179,9 @@ end
 function construct_nonchild_household_distribution(household_distribution::T) where {T <: AbstractDataFrame}
     result = DataFrame(nadults=Int[], nchildren=Int[], nhouseholds=Int[])
     nonfamily_household_distribution = view(household_distribution, household_distribution.nchildren .== 0, :)
-    if isempty(nonfamily_household_distribution)
-        @warn "$(now())   There are adults without children in the population but not in the household data...fabricating households without children"
-        push!(result, (nadults=1, nchildren=0, nhouseholds=1))
-        push!(result, (nadults=2, nchildren=0, nhouseholds=1))
-        push!(result, (nadults=3, nchildren=0, nhouseholds=1))
-    else
-        for subdata in groupby(nonfamily_household_distribution, [:nadults, :nchildren])
-            row = (nadults=subdata[1, :nadults], nchildren=subdata[1, :nchildren], nhouseholds=sum(subdata.nhouseholds))
-            push!(result, row)
-        end
+    for subdata in groupby(nonfamily_household_distribution, [:nadults, :nchildren])
+        row = (nadults=subdata[1, :nadults], nchildren=subdata[1, :nchildren], nhouseholds=sum(subdata.nhouseholds))
+        push!(result, row)
     end
     result[!, :proportion] = result.nhouseholds ./ sum(result.nhouseholds)
     result

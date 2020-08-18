@@ -25,26 +25,22 @@ function add_SA2!(SA_code::Int, sa2_subset::Vector{Int}, region_list::DataFrame)
 	sa2_subset
 end
 
-"Returns: DataFrame with 1 column (SA2_code), containing the set of SA2s used to generate the population."
-function construct_sa2_subset(cfg)
-	all_regions = DataFrame(CSV.File(joinpath(cfg["input_datadir"], "ASGS_codes.tsv"); delim='\t'))
-	if cfg["subpop_module"]  # Generate population from a proper subset of SA2s
-		infile = joinpath(cfg["input_datadir"], cfg["regions_file"])
-		dlm    = splitext(infile)[2][2:end]  # "csv" or "tsv"
-		dlm    = dlm == "csv" ? ',' : '\t'
-		subset_regions = DataFrame(CSV.File(infile; delim=dlm))
-		sa2_subset     = loop(subset_regions, all_regions)
-	else  # Generate population using all SA2s
-		sa2_subset = all_regions.SA2_MAINCODE_2016[findall(x -> x == "Victoria", all_regions.STATE_NAME_2016)] # only take SA2 codes from VIC region
-	end
-	result = DataFrame(SA2_code = sa2_subset)
-    unique!(result)
-end
-
 ##########################################################################################
 # Script
 
-sa2_subset = construct_sa2_subset(cfg)  # DataFrame with 1 column (SA2_code), containing the set of SA2s used to generate the population.
+infile = joinpath(cfg["input_datadir"], cfg["regions_file"])
+dlm    = splitext(infile)[2][2:end]  # "csv" or "tsv"
+dlm    = dlm == "csv" ? ',' : '\t'
+subset_regions = DataFrame(CSV.File(infile; delim=dlm))
+all_regions    = DataFrame(CSV.File(joinpath(cfg["input_datadir"], "ASGS_codes.tsv"); delim='\t'))
+
+if cfg["subpop_module"]
+	sa2_subset = loop(subset_regions, all_regions)
+else
+	sa2_subset = all_regions.SA2_MAINCODE_2016[findall(x->x == "Victoria", all_regions.STATE_NAME_2016)] # only take SA2 codes from VIC region
+end
+sa2_subset = DataFrame(SA2_code = sa2_subset)
+
 outfile = "SA2_subset.tsv"
-CSV.write(joinpath(cfg["input_datadir"],  outfile), sa2_subset; delim='\t')
-CSV.write(joinpath(cfg["output_datadir"], outfile), sa2_subset; delim='\t')
+CSV.write(joinpath(cfg["input_datadir"],  outfile), unique(sa2_subset); delim='\t')
+CSV.write(joinpath(cfg["output_datadir"], outfile), unique(sa2_subset); delim='\t')
