@@ -1,5 +1,5 @@
-input_datadir:  "..\\test\\data\\input"   # When testing this dir is Demographics.jl/test/data/input
-output_datadir: "..\\test\\data\\output"  # When testing this dir is Demographics.jl/test/data/output
+input_datadir:  "../test/data/input"   # When testing this dir is Demographics.jl/test/data/input
+output_datadir: "../test/data/output"  # When testing this dir is Demographics.jl/test/data/output
 input_datafiles:
     age_distribution:             "population_by_age_by_SA2.tsv"
     cumsum_population:            "population_by_SA2.tsv"

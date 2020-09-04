@@ -1,6 +1,6 @@
 # Nathan
-input_datadir:  "..\\public_data_files_covid"
-output_datadir: ".\\test\\data\\input\\"
+input_datadir:  "../public_data_files_covid"
+output_datadir: "./test/data/input/"
 subpop_module: true #Boolean for including subpopulation generation
 regions_file: "SA2_subset_whole_pop.tsv"  # Exclude Upper Yarra Valley, Braeside (204011061, 208031184) because of small population
 
